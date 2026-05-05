@@ -226,7 +226,7 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
     </div>
     <button class="btn-login" onclick="doLogin()">BELÉPÉS</button>
     <div class="login-error" id="login-error">Érvénytelen kód vagy e-mail!</div>
-    <div class="admin-link">SZERVEZŐ BELÉPÉS: <span onclick="goAdmin()">ADMIN PANEL</span></div>
+    <div class="admin-link">SZERVEZŐ BELÉPÉS: <span onclick="tryAdminLogin()">ADMIN PANEL</span></div>
     <div style="margin-top:32px;text-align:center;font-size:10px;letter-spacing:2px;color:rgba(143,168,154,0.4);">© HHTE 2026</div>
   </div>
 </div>
@@ -751,6 +751,19 @@ function doCheckin() {
 }
 
 // ===== ADMIN =====
+function tryAdminLogin() {
+  const em = document.getElementById('inp-email').value.trim().toLowerCase();
+  const co = document.getElementById('inp-code').value.trim().toUpperCase();
+  if (em === ADMIN.email.toLowerCase() && co === ADMIN.code) {
+    document.getElementById('login-error').style.display = 'none';
+    goAdmin();
+  } else {
+    const err = document.getElementById('login-error');
+    err.textContent = 'Admin belépéshez add meg a helyes email címet és kódot!';
+    err.style.display = 'block';
+  }
+}
+
 function goAdmin() {
   document.getElementById('login-error').style.display = 'none';
   lsLoad();

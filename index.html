@@ -529,7 +529,7 @@ function doLogin() {
     state.currentCp = 0;
     state.startTime = Date.now();
     document.getElementById('login-error').style.display = 'none';
-    if (state.checkpoints.length === 0) state.checkpoints = DEMO_CPS.map(c => ({...c}));
+    
     document.getElementById('map-user-badge').textContent = u.name.split(' ').slice(-1)[0].toUpperCase() + ' · ' + u.code;
     document.getElementById('cp-user-badge').textContent = u.name.split(' ').slice(-1)[0].toUpperCase() + ' · ' + u.code;
     showScreen('s-map');
@@ -754,7 +754,7 @@ function doCheckin() {
 function goAdmin() {
   document.getElementById('login-error').style.display = 'none';
   lsLoad();
-  if (state.checkpoints.length === 0) state.checkpoints = DEMO_CPS.map(c => ({...c}));
+  
   buildPartList();
   showScreen('s-admin-map');
   initAdminMap();
@@ -887,7 +887,7 @@ function refreshAdminCpList() {
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="admin-cp-num">${i === 0 ? 'R' : i === state.checkpoints.length-1 ? 'C' : i}</div>
         <div style="flex:1;">
-          <input class="admin-cp-name-input" value="${cp.name}" onchange="renameCp(${i}, this.value)" onblur="renameCp(${i}, this.value); lsSave();" placeholder="Pont neve...">
+          <input class="admin-cp-name-input" value="${cp.name}" oninput="renameCp(${i}, this.value)" onblur="renameCp(${i}, this.value); lsSave();" placeholder="Pont neve...">
           <div class="admin-cp-coords">${cp.lat.toFixed(5)}, ${cp.lng.toFixed(5)} · ${cp.km} km</div>
         </div>
         <button class="admin-cp-del" onclick="deleteCp(${i})">✕</button>
@@ -908,7 +908,20 @@ function renameCp(i, name) {
 }
 
 function setCpTime(i, field, val) {
+  if (!state.checkpoints[i]) return;
   state.checkpoints[i][field] = val;
+  const rows = document.getElementById('admin-cp-rows');
+  if (rows) {
+    const allRows = rows.querySelectorAll('.admin-cp-row');
+    if (allRows[i]) {
+      const indicator = allRows[i].querySelector('span:last-of-type');
+      const cp = state.checkpoints[i];
+      if (indicator) {
+        indicator.textContent = (cp.openFrom||cp.openTo) ? 'AKTÍV' : 'MINDIG';
+        indicator.style.color = (cp.openFrom||cp.openTo) ? '#8fc870' : 'var(--frost)';
+      }
+    }
+  }
   lsSave();
 }
 

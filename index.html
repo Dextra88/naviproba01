@@ -227,6 +227,7 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
     <button class="btn-login" onclick="doLogin()">BELÉPÉS</button>
     <div class="login-error" id="login-error">Érvénytelen kód vagy e-mail!</div>
     <div class="admin-link">SZERVEZŐ BELÉPÉS: <span onclick="goAdmin()">ADMIN PANEL</span></div>
+    <div style="margin-top:32px;text-align:center;font-size:10px;letter-spacing:2px;color:rgba(143,168,154,0.4);">© HHTE 2026</div>
   </div>
 </div>
 
@@ -550,7 +551,7 @@ function initUserMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(state.map);
 
   if (state.gpxRoute && state.gpxRoute.length > 0) {
-    state.gpxLayer = L.polyline(state.gpxRoute, {color:'#8fa89a', weight:4, opacity:0.85}).addTo(state.map);
+    state.gpxLayer = L.polyline(state.gpxRoute, {color:'#1a3a6b', weight:4, opacity:0.85}).addTo(state.map);
   }
 
   renderCpMarkersUser();
@@ -778,7 +779,7 @@ function initAdminMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(state.adminMap);
 
   if (state.gpxRoute && state.gpxRoute.length > 0) {
-    state.adminGpxLayer = L.polyline(state.gpxRoute, {color:'#8fa89a', weight:4, opacity:0.9}).addTo(state.adminMap);
+    state.adminGpxLayer = L.polyline(state.gpxRoute, {color:'#1a3a6b', weight:4, opacity:0.9}).addTo(state.adminMap);
     state.adminMap.fitBounds(state.adminGpxLayer.getBounds(), {padding:[30,30]});
     updateGpxUI(true, '', state.gpxRoute.length);
   }
@@ -1033,7 +1034,7 @@ function parseKML(text, filename) {
 
 function applyRouteToMap(coords, filename, pointCount) {
   if (state.adminGpxLayer) state.adminMap.removeLayer(state.adminGpxLayer);
-  state.adminGpxLayer = L.polyline(coords, {color:'#8fa89a', weight:4, opacity:0.9}).addTo(state.adminMap);
+  state.adminGpxLayer = L.polyline(coords, {color:'#1a3a6b', weight:4, opacity:0.9}).addTo(state.adminMap);
   state.adminMap.fitBounds(state.adminGpxLayer.getBounds(), {padding:[30,30]});
   updateGpxUI(true, filename, pointCount);
 }

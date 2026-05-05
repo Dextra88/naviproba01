@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Kitörés Túra</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kitörés Túra">
+<meta name="theme-color" content="#1e1a14">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bark:#1e1a14;
+  --bark2:#2a2318;
+  --bark3:#362e22;
+  --moss:#3d4a2e;
+  --moss2:#4a5c3a;
+  --olive:#5a7040;
+  --frost:#8fa89a;
+  --frost2:#a8c4b4;
+  --snow:#e8e6e0;
+  --mist:#c4c9be;
+  --mud:#5c4a32;
+  --blood:#7a1e1e;
+  --blood2:#9a2a2a;
+  --warn:#b8a830;
+  --ok:#5a8c3a;
+}
+
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(--snow);}
+
+/* ===== SCREENS ===== */
+.screen{display:none;height:100vh;flex-direction:column;overflow:hidden;}
+.screen.active{display:flex;}
+
+/* ===== LOGIN ===== */
+#s-login{background:var(--bark);justify-content:center;align-items:center;}
+.login-wrap{width:100%;max-width:380px;padding:0 24px;}
+.login-header{text-align:center;margin-bottom:36px;}
+.login-logo{font-family:'Bebas Neue',sans-serif;font-size:72px;letter-spacing:6px;line-height:1;color:var(--snow);}
+.login-sub{font-size:12px;letter-spacing:6px;color:var(--frost);margin-top:4px;}
+.login-event{display:inline-block;margin-top:14px;border:1px solid var(--moss2);padding:5px 16px;font-size:12px;letter-spacing:3px;color:var(--mist);background:rgba(61,74,46,0.2);}
+.field-label{display:block;font-size:11px;letter-spacing:3px;color:var(--frost);text-transform:uppercase;margin-bottom:6px;}
+.field-input{width:100%;background:rgba(255,255,255,0.04);border:none;border-bottom:2px solid var(--moss);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:20px;padding:10px 12px;letter-spacing:2px;outline:none;transition:border-color 0.2s;}
+.field-input:focus{border-bottom-color:var(--frost);}
+.field-group{margin-bottom:20px;}
+.btn-login{width:100%;margin-top:8px;background:var(--blood);border:none;border-bottom:3px solid #3a0e0e;color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:5px;padding:14px;cursor:pointer;transition:all 0.15s;}
+.btn-login:active{transform:translateY(2px);border-bottom-width:1px;}
+.login-error{background:rgba(122,30,30,0.3);border-left:3px solid var(--blood);padding:8px 12px;font-size:13px;color:#e07070;margin-top:12px;display:none;}
+.admin-link{margin-top:20px;text-align:center;font-size:11px;color:var(--frost);letter-spacing:2px;}
+.admin-link span{color:var(--blood);cursor:pointer;text-decoration:underline;}
+
+/* ===== TOPBAR ===== */
+.topbar{background:var(--bark);border-bottom:2px solid var(--moss);padding:0 16px;height:48px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:100;}
+.topbar-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--frost);}
+.topbar-badge{background:var(--moss);padding:3px 10px;font-size:12px;letter-spacing:1px;color:var(--mist);border:1px solid var(--moss2);}
+.topbar-badge.admin{background:rgba(122,30,30,0.3);border-color:var(--blood);color:#e07070;}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{background:var(--bark);border-top:2px solid var(--moss);display:flex;flex-shrink:0;z-index:100;}
+.nav-btn{flex:1;padding:10px 6px 8px;text-align:center;cursor:pointer;border:none;background:transparent;color:var(--frost);font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:color 0.2s;border-top:2px solid transparent;}
+.nav-btn.active{color:var(--snow);border-top-color:var(--frost);}
+.nav-btn svg{display:block;margin:0 auto 3px;}
+
+/* ===== MAP SCREEN ===== */
+#s-map{background:var(--bark);}
+.map-container{flex:1;position:relative;overflow:hidden;}
+#map{width:100%;height:100%;}
+
+.gps-overlay{position:absolute;bottom:16px;left:16px;right:16px;z-index:400;pointer-events:none;}
+.gps-card{background:rgba(30,26,20,0.92);border:1px solid var(--moss);padding:12px 14px;pointer-events:all;}
+.gps-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.gps-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite;flex-shrink:0;}
+.gps-dot.searching{background:var(--warn);}
+.gps-dot.far{background:var(--blood);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.gps-text{font-size:12px;letter-spacing:1px;color:var(--frost);}
+.dist-row{display:flex;align-items:baseline;gap:8px;}
+.dist-val{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;color:var(--snow);}
+.dist-val.ok{color:#8fc870;}
+.dist-val.far{color:#e07070;}
+.dist-label{font-size:12px;color:var(--frost);letter-spacing:1px;}
+.threshold-label{font-size:11px;color:var(--frost);letter-spacing:1px;margin-top:2px;}
+
+.checkin-btn{width:100%;margin-top:10px;border:none;border-bottom:3px solid transparent;color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;padding:13px;cursor:pointer;transition:all 0.15s;pointer-events:all;}
+.checkin-btn.ready{background:var(--blood);border-bottom-color:#3a0e0e;}
+.checkin-btn.disabled{background:rgba(255,255,255,0.06);color:var(--frost);cursor:not-allowed;}
+.checkin-btn.success{background:var(--ok);border-bottom-color:#2a5a1a;}
+.checkin-btn:active.ready{transform:translateY(2px);border-bottom-width:1px;}
+
+/* ===== CHECKPOINTS SCREEN ===== */
+#s-checkpoints{background:var(--bark);}
+.cp-scroll{flex:1;overflow-y:auto;padding:16px;}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:4px;color:var(--frost);margin-bottom:12px;text-transform:uppercase;}
+.progress-bar-wrap{margin-bottom:20px;}
+.progress-bar-bg{height:4px;background:rgba(255,255,255,0.08);}
+.progress-bar-fill{height:100%;background:var(--olive);transition:width 0.5s;}
+.progress-stats{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--frost);letter-spacing:1px;}
+
+.cp-item{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-left:3px solid transparent;cursor:pointer;}
+.cp-item.done{border-left-color:var(--olive);opacity:0.65;}
+.cp-item.active{border-left-color:var(--frost);background:rgba(143,168,154,0.07);}
+.cp-item.locked{border-left-color:rgba(255,255,255,0.08);opacity:0.4;}
+.cp-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+.cp-icon.done{background:var(--olive);color:var(--snow);}
+.cp-icon.active{background:var(--frost);color:var(--bark);}
+.cp-icon.locked{background:rgba(255,255,255,0.08);color:var(--frost);}
+.cp-info{flex:1;}
+.cp-name{font-size:15px;font-weight:500;letter-spacing:0.5px;}
+.cp-meta{font-size:11px;color:var(--frost);letter-spacing:1px;margin-top:2px;}
+.cp-dist{font-size:12px;color:var(--mist);text-align:right;}
+.cp-time{font-size:10px;color:var(--frost);margin-top:2px;}
+
+/* ===== ADMIN MAP SCREEN ===== */
+#s-admin-map{background:var(--bark);}
+.admin-map-container{flex:1;position:relative;overflow:hidden;}
+#admin-map{width:100%;height:100%;}
+
+.admin-toolbar{position:absolute;top:12px;left:12px;right:12px;z-index:500;}
+.admin-tool-row{display:flex;gap:8px;margin-bottom:8px;}
+.admin-tool-btn{flex:1;background:rgba(30,26,20,0.92);border:1px solid var(--moss);color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:9px 6px;cursor:pointer;text-align:center;transition:all 0.15s;}
+.admin-tool-btn.active{background:var(--blood);border-color:var(--blood2);}
+.admin-tool-btn:hover{border-color:var(--frost);}
+
+.gpx-upload-area{background:rgba(30,26,20,0.92);border:1px solid var(--moss);padding:12px 14px;}
+.gpx-row{display:flex;align-items:center;gap:10px;}
+.gpx-label{font-size:12px;letter-spacing:2px;color:var(--frost);flex:1;}
+.gpx-btn{background:var(--moss);border:1px solid var(--moss2);color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:7px 14px;cursor:pointer;}
+.gpx-status{font-size:11px;color:var(--ok);letter-spacing:1px;margin-top:6px;display:none;}
+
+.admin-cp-panel{position:absolute;bottom:12px;left:12px;right:12px;z-index:500;}
+.admin-cp-list{background:rgba(30,26,20,0.92);border:1px solid var(--moss);max-height:180px;overflow-y:auto;}
+.admin-cp-list-header{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;}
+.admin-cp-list-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;color:var(--frost);}
+.admin-cp-count{font-size:12px;color:var(--mist);}
+.admin-cp-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,0.05);}
+.admin-cp-num{width:24px;height:24px;border-radius:50%;background:var(--moss);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
+.admin-cp-name-input{flex:1;background:transparent;border:none;color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:14px;outline:none;letter-spacing:0.5px;}
+.admin-cp-name-input::placeholder{color:var(--frost);}
+.admin-cp-coords{font-size:10px;color:var(--frost);letter-spacing:0.5px;}
+.admin-cp-del{background:transparent;border:none;color:var(--blood);cursor:pointer;padding:4px;font-size:14px;}
+.no-cp-hint{padding:14px;font-size:12px;color:var(--frost);letter-spacing:1px;text-align:center;}
+
+/* ===== ADMIN SETTINGS ===== */
+#s-admin-settings{background:var(--bark);}
+.settings-scroll{flex:1;overflow-y:auto;padding:16px;}
+.settings-block{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);padding:16px;margin-bottom:14px;}
+.settings-block-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;color:var(--frost);margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:8px;}
+.settings-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.settings-label{font-size:13px;color:var(--mist);min-width:120px;letter-spacing:0.5px;}
+.settings-val{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--snow);min-width:52px;text-align:right;}
+.settings-unit{font-size:13px;color:var(--frost);}
+.settings-slider{flex:1;}
+.preset-row{display:flex;gap:8px;margin-top:4px;}
+.preset-btn{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:var(--mist);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:8px;cursor:pointer;transition:all 0.15s;}
+.preset-btn:hover{border-color:var(--frost);color:var(--snow);}
+.preset-btn.active{background:var(--moss);border-color:var(--moss2);color:var(--snow);}
+.info-text{font-size:12px;color:var(--frost);letter-spacing:0.5px;line-height:1.6;margin-top:8px;}
+
+.btn-save-settings{width:100%;background:var(--blood);border:none;border-bottom:3px solid #3a0e0e;color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:4px;padding:12px;cursor:pointer;margin-top:4px;}
+.save-confirm{font-size:12px;color:#8fc870;letter-spacing:2px;text-align:center;margin-top:8px;display:none;}
+
+.participants-list{margin-top:4px;}
+.part-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.part-avatar{width:30px;height:30px;border-radius:50%;background:var(--moss);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--mist);flex-shrink:0;}
+.part-name{font-size:14px;color:var(--snow);flex:1;}
+.part-status{font-size:10px;letter-spacing:1px;padding:3px 7px;text-transform:uppercase;}
+.part-status.aktiv{background:rgba(61,74,46,0.5);color:#8fc870;}
+.part-status.befejezett{background:rgba(61,74,46,0.8);color:#a0e080;}
+.part-status.kesik{background:rgba(122,30,30,0.4);color:#e07070;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-bottom:2px solid var(--olive);padding:12px;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--frost);}
+.stat-lbl{font-size:11px;letter-spacing:2px;color:var(--mist);text-transform:uppercase;}
+
+/* ===== SUCCESS ===== */
+#s-success{background:var(--bark);justify-content:center;align-items:center;text-align:center;padding:40px 24px;}
+.success-icon{width:80px;height:80px;border-radius:50%;background:var(--ok);margin:0 auto 24px;display:flex;align-items:center;justify-content:center;border:3px solid var(--frost2);}
+#s-success h2{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:4px;}
+#s-success p{color:var(--frost);font-size:16px;margin-top:6px;letter-spacing:1px;}
+.finish-stats{margin-top:28px;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:320px;}
+.fstat{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);padding:14px;}
+.fstat-val{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--frost);}
+.fstat-lbl{font-size:11px;letter-spacing:2px;color:var(--mist);}
+
+/* Leaflet overrides */
+.leaflet-container{background:#1a1f0f;}
+.leaflet-tile{filter:brightness(0.7) saturate(0.6);}
+.cp-marker-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;font-weight:bold;border:2px solid;}
+.cp-marker-done{background:var(--olive);border-color:var(--frost);color:var(--snow);}
+.cp-marker-active{background:var(--frost);border-color:var(--snow);color:var(--bark);}
+.cp-marker-locked{background:var(--bark2);border-color:var(--moss);color:var(--frost);}
+.cp-marker-admin{background:var(--blood);border-color:#e07070;color:var(--snow);}
+.cp-marker-new{background:var(--warn);border-color:#e0c040;color:var(--bark);}
+.leaflet-popup-content-wrapper{background:var(--bark2);border:1px solid var(--moss);border-radius:0;color:var(--snow);font-family:'Barlow Condensed',sans-serif;}
+.leaflet-popup-tip{background:var(--bark2);}
+.radius-circle{stroke:var(--frost);stroke-width:1.5;fill:rgba(143,168,154,0.08);stroke-dasharray:4 3;}
+.radius-circle-far{stroke:var(--blood);stroke-width:1.5;fill:rgba(122,30,30,0.06);stroke-dasharray:4 3;}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="s-login" class="screen active">
+  <div class="login-wrap">
+    <div class="login-header">
+      <div class="login-logo">KITÖRÉS<br>TÚRA</div>
+      <div class="login-sub">TÉLI EXPEDÍCIÓ · 2025</div>
+      <div class="login-event" id="event-display">2025. DEC 14. · 09:00</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">E-mail cím</label>
+      <input class="field-input" type="email" id="inp-email" placeholder="nev@pelda.hu" autocomplete="off">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Regisztrációs kód</label>
+      <input class="field-input" type="text" id="inp-code" maxlength="3" placeholder="_ _ _" style="font-size:28px;text-align:center;letter-spacing:12px;" autocomplete="off">
+    </div>
+    <button class="btn-login" onclick="doLogin()">BELÉPÉS</button>
+    <div class="login-error" id="login-error">Érvénytelen kód vagy e-mail!</div>
+    <div class="admin-link">SZERVEZŐ BELÉPÉS: <span onclick="goAdmin()">ADMIN PANEL</span></div>
+  </div>
+</div>
+
+<!-- ===== MAP SCREEN ===== -->
+<div id="s-map" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">KITÖRÉS</span>
+    <span class="topbar-badge" id="map-user-badge">—</span>
+  </div>
+  <div class="map-container">
+    <div id="map"></div>
+    <div class="gps-overlay">
+      <div class="gps-card">
+        <div class="gps-row">
+          <div class="gps-dot searching" id="gps-dot"></div>
+          <span class="gps-text" id="gps-text">GPS helyzet keresése...</span>
+        </div>
+        <div class="dist-row">
+          <div class="dist-val far" id="dist-val">— m</div>
+          <div class="dist-label" id="dist-cp-name">következő pont</div>
+        </div>
+        <div class="threshold-label">Bejelentkezési határ: <span id="thresh-label">100</span> m</div>
+        <button class="checkin-btn disabled" id="checkin-btn" onclick="doCheckin()">GPS KERESÉS...</button>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-map" onclick="switchTab('map')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13M15 7v13"/></svg>
+      Térkép
+    </button>
+    <button class="nav-btn" id="nav-cp" onclick="switchTab('checkpoints')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Pontok
+    </button>
+    <button class="nav-btn" id="nav-logout" onclick="showScreen('s-login')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Kilép
+    </button>
+  </div>
+</div>
+
+<!-- ===== CHECKPOINTS SCREEN ===== -->
+<div id="s-checkpoints" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">KITÖRÉS</span>
+    <span class="topbar-badge" id="cp-user-badge">—</span>
+  </div>
+  <div class="cp-scroll">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="progress-stats">
+        <span id="prog-cp-txt">0 / 0 pont</span>
+        <span id="prog-km-txt">0 km</span>
+      </div>
+    </div>
+    <div class="section-title">Ellenőrzőpontok</div>
+    <div id="cp-list-scroll"></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn" id="nav-map2" onclick="switchTab('map')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13M15 7v13"/></svg>
+      Térkép
+    </button>
+    <button class="nav-btn active" id="nav-cp2" onclick="switchTab('checkpoints')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Pontok
+    </button>
+    <button class="nav-btn" onclick="showScreen('s-login')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Kilép
+    </button>
+  </div>
+</div>
+
+<!-- ===== SUCCESS ===== -->
+<div id="s-success" class="screen">
+  <div class="success-icon">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <h2>TELJESÍTVE!</h2>
+  <p>Gratulálunk, befejezted a túrát!</p>
+  <div class="finish-stats">
+    <div class="fstat"><div class="fstat-val" id="fin-km">—</div><div class="fstat-lbl">Km</div></div>
+    <div class="fstat"><div class="fstat-val" id="fin-cp">—</div><div class="fstat-lbl">Pont</div></div>
+    <div class="fstat"><div class="fstat-val" id="fin-time">—</div><div class="fstat-lbl">Idő</div></div>
+    <div class="fstat"><div class="fstat-val">+680m</div><div class="fstat-lbl">Szint</div></div>
+  </div>
+</div>
+
+<!-- ===== ADMIN MAP ===== -->
+<div id="s-admin-map" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">KITÖRÉS · ADMIN</span>
+    <span class="topbar-badge admin">SZERKESZTÉS</span>
+  </div>
+  <div class="admin-map-container">
+    <div id="admin-map"></div>
+    <div class="admin-toolbar">
+      <div class="admin-tool-row">
+        <div class="admin-tool-btn active" id="tool-view" onclick="setAdminTool('view')">NÉZET</div>
+        <div class="admin-tool-btn" id="tool-add" onclick="setAdminTool('add')">+ PONT HOZZÁADÁS</div>
+        <div class="admin-tool-btn" onclick="lsSave()" style="max-width:60px;">MENT</div>
+      </div>
+      <div class="gpx-upload-area">
+        <div class="gpx-row">
+          <span class="gpx-label">GPX útvonal feltöltés:</span>
+          <label class="gpx-btn" for="gpx-file-input">TALLÓZ</label>
+          <input type="file" id="gpx-file-input" accept=".gpx" style="display:none" onchange="loadGPX(this)">
+        </div>
+        <div class="gpx-status" id="gpx-status"></div>
+      </div>
+    </div>
+    <div class="admin-cp-panel">
+      <div class="admin-cp-list" id="admin-cp-list">
+        <div class="admin-cp-list-header">
+          <span class="admin-cp-list-title">ELLENŐRZŐPONTOK</span>
+          <span class="admin-cp-count" id="admin-cp-count">0 pont</span>
+        </div>
+        <div id="admin-cp-rows">
+          <div class="no-cp-hint">Kattints a térképre pont hozzáadásához, vagy töltsd fel a GPX fájlt.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchAdminTab('map')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13M15 7v13"/></svg>
+      Térkép
+    </button>
+    <button class="nav-btn" onclick="switchAdminTab('settings')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Beállítások
+    </button>
+    <button class="nav-btn" onclick="showScreen('s-login')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Kilép
+    </button>
+  </div>
+</div>
+
+<!-- ===== ADMIN SETTINGS ===== -->
+<div id="s-admin-settings" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">KITÖRÉS · ADMIN</span>
+    <span class="topbar-badge admin">BEÁLLÍTÁSOK</span>
+  </div>
+  <div class="settings-scroll">
+
+    <div class="settings-block">
+      <div class="settings-block-title">Bejelentkezési sugár</div>
+      <div class="settings-row">
+        <span class="settings-label">Sugár:</span>
+        <input type="range" class="settings-slider" id="radius-slider" min="25" max="500" step="25" value="100" oninput="updateRadiusUI(this.value)">
+        <span class="settings-val" id="radius-disp">100</span>
+        <span class="settings-unit">m</span>
+      </div>
+      <div class="preset-row">
+        <button class="preset-btn" onclick="setRadius(50)">50 m</button>
+        <button class="preset-btn active" id="preset-100" onclick="setRadius(100)">100 m</button>
+        <button class="preset-btn" onclick="setRadius(200)">200 m</button>
+        <button class="preset-btn" onclick="setRadius(300)">300 m</button>
+      </div>
+      <p class="info-text">A résztvevő csak akkor tud bejelentkezni, ha ennél közelebb van az ellenőrzőponthoz GPS szerint.</p>
+    </div>
+
+    <div class="settings-block">
+      <div class="settings-block-title">Túra adatok</div>
+      <div class="field-group">
+        <label class="field-label">Esemény neve</label>
+        <input class="field-input" id="set-event-name" value="Téli Expedíció 2025" style="font-size:16px;">
+      </div>
+      <div class="field-group" style="margin-top:12px;">
+        <label class="field-label">Dátum és idő</label>
+        <input class="field-input" id="set-event-date" type="datetime-local" value="2025-12-14T09:00" style="font-size:16px;">
+      </div>
+    </div>
+
+    <div class="settings-block">
+      <div class="settings-block-title">Résztvevők</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+        <div style="flex:1;font-size:12px;color:var(--frost);letter-spacing:1px;" id="part-count-label">0 résztvevő</div>
+        <label class="gpx-btn" for="csv-upload" style="font-size:12px;letter-spacing:2px;padding:6px 12px;cursor:pointer;">CSV IMPORT</label>
+        <input type="file" id="csv-upload" accept=".csv,.txt" style="display:none" onchange="loadCSV(this)">
+        <button onclick="clearParticipants()" style="background:transparent;border:1px solid rgba(122,30,30,0.5);color:#e07070;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;padding:6px 10px;cursor:pointer;">TÖRL</button>
+      </div>
+      <div style="font-size:11px;color:var(--frost);letter-spacing:1px;margin-bottom:10px;line-height:1.6;">
+        CSV formátum: <span style="color:var(--snow);font-family:monospace;">nev,email,kod</span><br>
+        Pl.: <span style="color:var(--mist);font-family:monospace;">Tóth Péter,toth@email.hu,7A3</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <input class="field-input" id="new-part-name" placeholder="Név" style="font-size:14px;flex:2;">
+        <input class="field-input" id="new-part-email" placeholder="Email" style="font-size:14px;flex:3;">
+        <input class="field-input" id="new-part-code" placeholder="KÓD" maxlength="3" style="font-size:14px;flex:1;text-align:center;letter-spacing:3px;">
+        <button onclick="addParticipant()" style="background:var(--moss);border:none;color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:18px;padding:0 12px;cursor:pointer;flex-shrink:0;">+</button>
+      </div>
+      <div id="part-list" style="max-height:220px;overflow-y:auto;"></div>
+    </div>
+
+    <button class="btn-save-settings" onclick="saveSettings()">BEÁLLÍTÁSOK MENTÉSE</button>
+    <div class="save-confirm" id="save-confirm">MENTVE — ÉRVÉNYES MINDEN RÉSZTVEVŐRE</div>
+    <button onclick="lsClear()" style="width:100%;margin-top:10px;background:transparent;border:1px solid rgba(122,30,30,0.4);color:#e07070;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;padding:10px;cursor:pointer;">ADATOK TÖRLÉSE</button>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="switchAdminTab('map')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13M15 7v13"/></svg>
+      Térkép
+    </button>
+    <button class="nav-btn active" onclick="switchAdminTab('settings')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Beállítások
+    </button>
+    <button class="nav-btn" onclick="showScreen('s-login')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Kilép
+    </button>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+const ADMIN = {email:'admin@vadon.hu', code:'ADM'};
+
+let state = {
+  user: null,
+  currentCp: 0,
+  checkinRadius: 100,
+  checkpoints: [],
+  participants: [],
+  gpxRoute: null,
+  adminTool: 'view',
+  gpsReady: false,
+  simDist: 999,
+  simInterval: null,
+  startTime: null,
+  map: null,
+  adminMap: null,
+  userMarker: null,
+  cpMarkers: [],
+  adminCpMarkers: [],
+  gpxLayer: null,
+  adminGpxLayer: null,
+  radiusCircle: null,
+};
+
+// Demo checkpoints (Mátra area)
+const DEMO_CPS = [
+  {name:'Rajt', lat:47.882, lng:19.976, km:0},
+  {name:'1. Pont — Fekete-kő', lat:47.896, lng:19.982, km:2.4},
+  {name:'2. Pont — Forrás', lat:47.910, lng:19.993, km:5.1},
+  {name:'3. Pont — Gerinc', lat:47.923, lng:20.012, km:7.8},
+  {name:'4. Pont — Vadleskunyhó', lat:47.912, lng:20.031, km:10.3},
+  {name:'5. Pont — Völgy', lat:47.901, lng:20.046, km:13.6},
+  {name:'Cél — Kékestető', lat:47.873, lng:20.061, km:18.0},
+];
+
+// ===== HELPERS =====
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function isCpOpen(cp) {
+  if (!cp.openFrom && !cp.openTo) return true;
+  const now = new Date();
+  const hhmm = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  if (cp.openFrom && !cp.openTo) return hhmm >= cp.openFrom;
+  if (!cp.openFrom && cp.openTo) return hhmm <= cp.openTo;
+  return hhmm >= cp.openFrom && hhmm <= cp.openTo;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 's-map') setTimeout(() => state.map && state.map.invalidateSize(), 100);
+  if (id === 's-admin-map') setTimeout(() => state.adminMap && state.adminMap.invalidateSize(), 100);
+}
+
+function formatTime(ms) {
+  const h = Math.floor(ms/3600000);
+  const m = Math.floor((ms%3600000)/60000);
+  return h > 0 ? h+'ó '+m+'p' : m+'p';
+}
+
+// ===== LOGIN =====
+function doLogin() {
+  const em = document.getElementById('inp-email').value.trim().toLowerCase();
+  const co = document.getElementById('inp-code').value.trim().toUpperCase();
+  if (em === ADMIN.email.toLowerCase() && co === ADMIN.code) { goAdmin(); return; }
+  lsLoad();
+  const u = state.participants.find(u => u.email.toLowerCase() === em && u.code === co.toUpperCase());
+  if (u) {
+    state.user = u;
+    state.currentCp = 0;
+    state.startTime = Date.now();
+    document.getElementById('login-error').style.display = 'none';
+    if (state.checkpoints.length === 0) state.checkpoints = DEMO_CPS.map(c => ({...c}));
+    document.getElementById('map-user-badge').textContent = u.name.split(' ').slice(-1)[0].toUpperCase() + ' · ' + u.code;
+    document.getElementById('cp-user-badge').textContent = u.name.split(' ').slice(-1)[0].toUpperCase() + ' · ' + u.code;
+    showScreen('s-map');
+    initUserMap();
+    buildCpList();
+    startGPSSim();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+// ===== USER MAP =====
+function initUserMap() {
+  if (state.map) { state.map.remove(); state.map = null; }
+  const cp0 = state.checkpoints[0] || {lat:47.882, lng:19.976};
+  state.map = L.map('map', {zoomControl:true, attributionControl:false}).setView([cp0.lat, cp0.lng], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(state.map);
+
+  if (state.gpxRoute) {
+    state.gpxLayer = L.polyline(state.gpxRoute, {color:'#8fa89a', weight:3, opacity:0.8, dashArray:'6 4'}).addTo(state.map);
+  }
+
+  renderCpMarkersUser();
+}
+
+function renderCpMarkersUser() {
+  if (!state.map) return;
+  state.cpMarkers.forEach(m => state.map.removeLayer(m));
+  state.cpMarkers = [];
+  if (state.radiusCircle) { state.map.removeLayer(state.radiusCircle); state.radiusCircle = null; }
+
+  state.checkpoints.forEach((cp, i) => {
+    const statusClass = i < state.currentCp ? 'cp-marker-done' : i === state.currentCp ? 'cp-marker-active' : 'cp-marker-locked';
+    const label = i === 0 ? 'R' : i === state.checkpoints.length-1 ? 'C' : i;
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="cp-marker-icon ${statusClass}" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;border:2px solid;">${label}</div>`,
+      iconSize: [32, 32], iconAnchor: [16, 16]
+    });
+    const m = L.marker([cp.lat, cp.lng], {icon}).addTo(state.map);
+    m.bindPopup(`<b style="font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-size:14px;">${cp.name}</b><br><span style="font-size:12px;color:#8fa89a;">${cp.km} km</span>`);
+    state.cpMarkers.push(m);
+  });
+
+  if (state.checkpoints[state.currentCp]) {
+    const cp = state.checkpoints[state.currentCp];
+    const isInRange = state.simDist <= state.checkinRadius;
+    state.radiusCircle = L.circle([cp.lat, cp.lng], {
+      radius: state.checkinRadius,
+      className: isInRange ? 'radius-circle' : 'radius-circle-far'
+    }).addTo(state.map);
+  }
+}
+
+function buildCpList() {
+  const list = document.getElementById('cp-list-scroll');
+  list.innerHTML = '';
+  const total = state.checkpoints.length;
+  state.checkpoints.forEach((cp, i) => {
+    const st = i < state.currentCp ? 'done' : i === state.currentCp ? 'active' : 'locked';
+    const ico = i === 0 ? 'R' : i === total-1 ? 'C' : i;
+    list.innerHTML += `<div class="cp-item ${st}" onclick="focusCp(${i})">
+      <div class="cp-icon ${st}">${st==='done'?'✓':ico}</div>
+      <div class="cp-info">
+        <div class="cp-name">${cp.name}</div>
+        <div class="cp-meta">${cp.lat.toFixed(5)}, ${cp.lng.toFixed(5)}</div>
+      </div>
+      <div class="cp-dist">${cp.km > 0 ? cp.km+' km' : 'RAJT'}${st==='done'?'<div class="cp-time" style="color:#8fc870;">✓</div>':''}</div>
+    </div>`;
+  });
+
+  const pct = total > 1 ? Math.round((state.currentCp / (total-1)) * 100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-cp-txt').textContent = state.currentCp + ' / ' + total + ' pont';
+  const kmDone = state.currentCp < total ? (state.checkpoints[state.currentCp]?.km || 0) : (state.checkpoints[total-1]?.km || 0);
+  const kmTotal = total > 0 ? state.checkpoints[total-1]?.km || 0 : 0;
+  document.getElementById('prog-km-txt').textContent = kmDone + ' / ' + kmTotal + ' km';
+}
+
+function focusCp(i) {
+  if (!state.map) return;
+  const cp = state.checkpoints[i];
+  state.map.setView([cp.lat, cp.lng], 15);
+  switchTab('map');
+}
+
+function switchTab(tab) {
+  if (tab === 'map') {
+    showScreen('s-map');
+    ['nav-map','nav-map2'].forEach(id => { const el=document.getElementById(id); if(el) el.classList.add('active'); });
+    ['nav-cp','nav-cp2'].forEach(id => { const el=document.getElementById(id); if(el) el.classList.remove('active'); });
+  } else {
+    showScreen('s-checkpoints');
+    ['nav-cp','nav-cp2'].forEach(id => { const el=document.getElementById(id); if(el) el.classList.add('active'); });
+    ['nav-map','nav-map2'].forEach(id => { const el=document.getElementById(id); if(el) el.classList.remove('active'); });
+  }
+}
+
+// ===== GPS SIMULATION =====
+function startGPSSim() {
+  if (state.simInterval) clearInterval(state.simInterval);
+  state.simDist = 850;
+  state.gpsReady = false;
+  updateGPSUI('searching', 'GPS helyzet keresése...', null);
+  updateCheckinBtn('disabled', 'GPS KERESÉS...');
+
+  setTimeout(() => {
+    updateGPSUI('far', 'GPS aktív — közeledj a ponthoz', state.simDist);
+    state.simInterval = setInterval(() => {
+      if (state.simDist <= 0) return;
+      state.simDist = Math.max(0, state.simDist - Math.round(Math.random()*90+50));
+      updateDistanceUI(state.simDist);
+    }, 700);
+  }, 1600);
+}
+
+function updateGPSUI(dotClass, text, dist) {
+  document.getElementById('gps-dot').className = 'gps-dot ' + (dotClass !== 'ok' ? dotClass : '');
+  document.getElementById('gps-text').textContent = text;
+  if (dist !== null) updateDistanceUI(dist);
+}
+
+function updateDistanceUI(dist) {
+  const inRange = dist <= state.checkinRadius;
+  const dv = document.getElementById('dist-val');
+  dv.textContent = Math.round(dist) + ' m';
+  dv.className = 'dist-val ' + (inRange ? 'ok' : 'far');
+  document.getElementById('thresh-label').textContent = state.checkinRadius;
+
+  const cpName = state.checkpoints[state.currentCp]?.name || '';
+  document.getElementById('dist-cp-name').textContent = cpName;
+
+  if (state.radiusCircle) {
+    state.radiusCircle.setStyle({className: inRange ? 'radius-circle' : 'radius-circle-far'});
+  }
+
+  if (inRange) {
+    const cp = state.checkpoints[state.currentCp];
+    const timeOk = isCpOpen(cp);
+    if (!timeOk) {
+      updateCheckinBtn('disabled', 'PONT ZÁRVA — ' + (cp.openFrom||'?') + ' – ' + (cp.openTo||'?'));
+      document.getElementById('gps-dot').className = 'gps-dot far';
+      document.getElementById('gps-text').textContent = 'A pont jelenleg zárva';
+      return;
+    }
+    clearInterval(state.simInterval);
+    state.gpsReady = true;
+    document.getElementById('gps-dot').className = 'gps-dot';
+    document.getElementById('gps-text').textContent = 'GPS aktív — A PONTON BELÜL';
+    const name = state.currentCp === 0 ? 'RAJT BEJELENTKEZÉS' : state.checkpoints[state.currentCp]?.name?.toUpperCase() || 'BEJELENTKEZÉS';
+    updateCheckinBtn('ready', name);
+  } else {
+    updateCheckinBtn('disabled', 'MÉG ' + Math.round(dist - state.checkinRadius) + ' M — KÖZELEDJ');
+  }
+}
+
+function updateCheckinBtn(state_, txt) {
+  const b = document.getElementById('checkin-btn');
+  b.className = 'checkin-btn ' + state_;
+  b.textContent = txt;
+}
+
+function doCheckin() {
+  if (!state.gpsReady) return;
+  state.gpsReady = false;
+  clearInterval(state.simInterval);
+  updateCheckinBtn('success', '✓ BEJELENTKEZVE');
+
+  setTimeout(() => {
+    state.currentCp++;
+    if (state.currentCp >= state.checkpoints.length) {
+      const elapsed = Date.now() - state.startTime;
+      document.getElementById('fin-km').textContent = state.checkpoints[state.checkpoints.length-1]?.km || '—';
+      document.getElementById('fin-cp').textContent = state.checkpoints.length;
+      document.getElementById('fin-time').textContent = formatTime(elapsed);
+      showScreen('s-success');
+      return;
+    }
+    renderCpMarkersUser();
+    buildCpList();
+    const nextCp = state.checkpoints[state.currentCp];
+    if (state.map && nextCp) state.map.panTo([nextCp.lat, nextCp.lng]);
+    state.simDist = 800;
+    startGPSSim();
+  }, 1200);
+}
+
+// ===== ADMIN =====
+function goAdmin() {
+  document.getElementById('login-error').style.display = 'none';
+  lsLoad();
+  if (state.checkpoints.length === 0) state.checkpoints = DEMO_CPS.map(c => ({...c}));
+  buildPartList();
+  showScreen('s-admin-map');
+  initAdminMap();
+}
+function switchAdminTab(tab) {
+  if (tab === 'map') {
+    showScreen('s-admin-map');
+    setTimeout(() => state.adminMap && state.adminMap.invalidateSize(), 100);
+  } else {
+    buildPartList();
+    showScreen('s-admin-settings');
+  }
+}
+
+function initAdminMap() {
+  if (state.adminMap) { state.adminMap.remove(); state.adminMap = null; }
+  const center = state.checkpoints.length > 0 ? [state.checkpoints[0].lat, state.checkpoints[0].lng] : [47.89, 19.99];
+  state.adminMap = L.map('admin-map', {zoomControl:true, attributionControl:false}).setView(center, 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(state.adminMap);
+
+  if (state.gpxRoute) {
+    state.adminGpxLayer = L.polyline(state.gpxRoute, {color:'#8fa89a', weight:3, opacity:0.8, dashArray:'6 4'}).addTo(state.adminMap);
+  }
+
+  state.adminMap.on('click', onAdminMapClick);
+  renderAdminCpMarkers();
+  refreshAdminCpList();
+}
+
+function onAdminMapClick(e) {
+  if (state.adminTool !== 'add') return;
+  const cp = {
+    name: (state.checkpoints.length === 0 ? 'Rajt' : state.checkpoints.length === 0 ? 'Cél' : (state.checkpoints.length) + '. Pont'),
+    lat: e.latlng.lat,
+    lng: e.latlng.lng,
+    km: 0
+  };
+  if (state.checkpoints.length === 0) cp.name = 'Rajt';
+  state.checkpoints.push(cp);
+  recalcKm();
+  renderAdminCpMarkers();
+  refreshAdminCpList();
+  lsSave();
+}
+
+function recalcKm() {
+  for (let i = 0; i < state.checkpoints.length; i++) {
+    if (i === 0) { state.checkpoints[i].km = 0; continue; }
+    const prev = state.checkpoints[i-1];
+    const cur = state.checkpoints[i];
+    const d = haversine(prev.lat, prev.lng, cur.lat, cur.lng);
+    state.checkpoints[i].km = Math.round((state.checkpoints[i-1].km + d/1000) * 10) / 10;
+  }
+}
+
+function renderAdminCpMarkers() {
+  if (!state.adminMap) return;
+  state.adminCpMarkers.forEach(m => state.adminMap.removeLayer(m));
+  state.adminCpMarkers = [];
+
+  state.checkpoints.forEach((cp, i) => {
+    const label = i === 0 ? 'R' : i === state.checkpoints.length-1 ? 'C' : i;
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="cp-marker-icon cp-marker-admin" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;border:2px solid;">${label}</div>`,
+      iconSize: [32, 32], iconAnchor: [16, 16]
+    });
+    const m = L.marker([cp.lat, cp.lng], {icon, draggable:true}).addTo(state.adminMap);
+    m.bindPopup(`<b style="font-family:'Bebas Neue',sans-serif;font-size:13px;">${cp.name}</b><br><small style="color:#8fa89a;">${cp.lat.toFixed(5)}, ${cp.lng.toFixed(5)}</small><br><small style="color:#8fa89a;">${cp.km} km</small>`);
+    m.on('dragend', e => {
+      const ll = e.target.getLatLng();
+      state.checkpoints[i].lat = ll.lat;
+      state.checkpoints[i].lng = ll.lng;
+      recalcKm();
+      renderAdminCpMarkers();
+      refreshAdminCpList();
+      lsSave();
+    });
+    state.adminCpMarkers.push(m);
+  });
+
+  if (state.checkpoints.length > 1) {
+    const line = L.polyline(state.checkpoints.map(c => [c.lat, c.lng]), {
+      color:'#4a5c3a', weight:2, dashArray:'5 5', opacity:0.7
+    }).addTo(state.adminMap);
+    state.adminCpMarkers.push(line);
+  }
+}
+
+function refreshAdminCpList() {
+  const rows = document.getElementById('admin-cp-rows');
+  const count = document.getElementById('admin-cp-count');
+  count.textContent = state.checkpoints.length + ' pont';
+
+  if (state.checkpoints.length === 0) {
+    rows.innerHTML = '<div class="no-cp-hint">Kattints a térképre pont hozzáadásához, vagy töltsd fel a GPX fájlt.</div>';
+    return;
+  }
+
+  rows.innerHTML = state.checkpoints.map((cp, i) => `
+    <div class="admin-cp-row" style="flex-direction:column;align-items:stretch;gap:6px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="admin-cp-num">${i === 0 ? 'R' : i === state.checkpoints.length-1 ? 'C' : i}</div>
+        <div style="flex:1;">
+          <input class="admin-cp-name-input" value="${cp.name}" onchange="renameCp(${i}, this.value)" onblur="renameCp(${i}, this.value); lsSave();" placeholder="Pont neve...">
+          <div class="admin-cp-coords">${cp.lat.toFixed(5)}, ${cp.lng.toFixed(5)} · ${cp.km} km</div>
+        </div>
+        <button class="admin-cp-del" onclick="deleteCp(${i})">✕</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.05);">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span style="font-size:11px;color:var(--frost);letter-spacing:1px;min-width:32px;">NYIT:</span>
+        <input type="time" value="${cp.openFrom||''}" onchange="setCpTime(${i},'openFrom',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:13px;padding:2px 4px;outline:none;width:80px;">
+        <span style="font-size:11px;color:var(--frost);letter-spacing:1px;min-width:32px;">ZÁRÁS:</span>
+        <input type="time" value="${cp.openTo||''}" onchange="setCpTime(${i},'openTo',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:13px;padding:2px 4px;outline:none;width:80px;">
+        <span style="font-size:10px;color:${cp.openFrom||cp.openTo ? '#8fc870' : 'var(--frost)'};letter-spacing:1px;">${cp.openFrom||cp.openTo ? 'AKTÍV' : 'MINDIG'}</span>
+      </div>
+    </div>`).join('');
+}
+
+function renameCp(i, name) {
+  state.checkpoints[i].name = name;
+}
+
+function setCpTime(i, field, val) {
+  state.checkpoints[i][field] = val;
+  lsSave();
+}
+
+function deleteCp(i) {
+  state.checkpoints.splice(i, 1);
+  recalcKm();
+  renderAdminCpMarkers();
+  refreshAdminCpList();
+}
+
+function setAdminTool(tool) {
+  state.adminTool = tool;
+  document.getElementById('tool-view').className = 'admin-tool-btn' + (tool==='view'?' active':'');
+  document.getElementById('tool-add').className = 'admin-tool-btn' + (tool==='add'?' active':'');
+  if (state.adminMap) {
+    state.adminMap.getContainer().style.cursor = tool === 'add' ? 'crosshair' : '';
+  }
+}
+
+// ===== GPX UPLOAD =====
+function loadGPX(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(e.target.result, 'text/xml');
+
+      const trkpts = xml.querySelectorAll('trkpt');
+      const wpts = xml.querySelectorAll('wpt');
+
+      if (trkpts.length > 0) {
+        state.gpxRoute = [];
+        trkpts.forEach(pt => {
+          state.gpxRoute.push([
+            parseFloat(pt.getAttribute('lat')),
+            parseFloat(pt.getAttribute('lon'))
+          ]);
+        });
+
+        if (state.adminGpxLayer) state.adminMap.removeLayer(state.adminGpxLayer);
+        state.adminGpxLayer = L.polyline(state.gpxRoute, {
+          color:'#8fa89a', weight:3, opacity:0.9, dashArray:'6 4'
+        }).addTo(state.adminMap);
+        state.adminMap.fitBounds(state.adminGpxLayer.getBounds(), {padding:[20,20]});
+      }
+
+      if (wpts.length > 0) {
+        state.checkpoints = [];
+        wpts.forEach((wpt, i) => {
+          const lat = parseFloat(wpt.getAttribute('lat'));
+          const lng = parseFloat(wpt.getAttribute('lon'));
+          const nameEl = wpt.querySelector('name');
+          const name = nameEl ? nameEl.textContent : (i===0?'Rajt':i===wpts.length-1?'Cél':i+'. Pont');
+          state.checkpoints.push({name, lat, lng, km:0});
+        });
+        recalcKm();
+        renderAdminCpMarkers();
+        refreshAdminCpList();
+      }
+
+      const status = document.getElementById('gpx-status');
+      const info = [];
+      if (state.gpxRoute) info.push(state.gpxRoute.length + ' GPS pont betöltve');
+      if (wpts.length > 0) info.push(wpts.length + ' waypoint importálva');
+      status.textContent = '✓ ' + (info.length ? info.join(' · ') : 'GPX betöltve');
+      status.style.display = 'block';
+      lsSave();
+    } catch(err) {
+      document.getElementById('gpx-status').textContent = 'Hiba: érvénytelen GPX fájl';
+      document.getElementById('gpx-status').style.display = 'block';
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ===== ADMIN SETTINGS =====
+function updateRadiusUI(v) {
+  document.getElementById('radius-disp').textContent = v;
+  [50,100,200,300].forEach(p => {
+    const btn = document.querySelector(`.preset-btn[onclick="setRadius(${p})"]`);
+    if(btn) btn.className = 'preset-btn' + (parseInt(v)===p?' active':'');
+  });
+}
+
+function setRadius(v) {
+  document.getElementById('radius-slider').value = v;
+  updateRadiusUI(v);
+}
+
+function saveSettings() {
+  state.checkinRadius = parseInt(document.getElementById('radius-slider').value);
+  document.getElementById('thresh-label').textContent = state.checkinRadius;
+  const name = document.getElementById('set-event-name').value;
+  const date = document.getElementById('set-event-date').value;
+  if (date) {
+    const d = new Date(date);
+    const fmt = d.toLocaleDateString('hu-HU',{year:'numeric',month:'short',day:'numeric'}) + ' · ' + d.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('event-display').textContent = fmt;
+  }
+  if (name) document.querySelector('.login-sub').textContent = name.toUpperCase();
+  renderCpMarkersUser();
+  lsSave();
+  const msg = document.getElementById('save-confirm');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2500);
+}
+
+function buildPartList() {
+  const list = document.getElementById('part-list');
+  const label = document.getElementById('part-count-label');
+  if (!list) return;
+  const parts = state.participants;
+  if (label) label.textContent = parts.length + ' résztvevő';
+  if (parts.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--frost);padding:10px 0;text-align:center;letter-spacing:1px;">Még nincs résztvevő. Add hozzá kézzel vagy importálj CSV-t.</div>';
+    return;
+  }
+  list.innerHTML = parts.map((p, i) => `
+    <div class="part-row">
+      <div class="part-avatar">${p.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</div>
+      <div style="flex:1;">
+        <div class="part-name">${p.name}</div>
+        <div style="font-size:11px;color:var(--frost);letter-spacing:0.5px;">${p.email}</div>
+      </div>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--frost);min-width:36px;text-align:right;">${p.code}</span>
+      <button onclick="removeParticipant(${i})" style="background:transparent;border:none;color:var(--blood);font-size:14px;cursor:pointer;padding:4px 6px;margin-left:4px;">✕</button>
+    </div>`).join('');
+}
+
+function addParticipant() {
+  const name = document.getElementById('new-part-name').value.trim();
+  const email = document.getElementById('new-part-email').value.trim().toLowerCase();
+  const code = document.getElementById('new-part-code').value.trim().toUpperCase();
+  if (!name || !email || !code) { showSaveToast('Töltsd ki az összes mezőt!'); return; }
+  if (state.participants.find(p => p.email === email || p.code === code)) {
+    showSaveToast('Ez az email vagy kód már létezik!'); return;
+  }
+  state.participants.push({name, email, code});
+  document.getElementById('new-part-name').value = '';
+  document.getElementById('new-part-email').value = '';
+  document.getElementById('new-part-code').value = '';
+  buildPartList();
+  lsSave();
+}
+
+function removeParticipant(i) {
+  state.participants.splice(i, 1);
+  buildPartList();
+  lsSave();
+}
+
+function clearParticipants() {
+  if (!confirm('Biztosan törlöd az összes résztvevőt?')) return;
+  state.participants = [];
+  buildPartList();
+  lsSave();
+}
+
+function loadCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
+    let added = 0, skipped = 0;
+    lines.forEach(line => {
+      const parts = line.split(',').map(s => s.trim());
+      if (parts.length < 3) { skipped++; return; }
+      const name = parts[0], email = parts[1].toLowerCase(), code = parts[2].toUpperCase();
+      if (!name || !email || !code) { skipped++; return; }
+      if (state.participants.find(p => p.email === email || p.code === code)) { skipped++; return; }
+      state.participants.push({name, email, code});
+      added++;
+    });
+    buildPartList();
+    lsSave();
+    showSaveToast('✓ ' + added + ' importálva' + (skipped ? ', ' + skipped + ' kihagyva' : ''));
+  };
+  reader.readAsText(file, 'UTF-8');
+  input.value = '';
+}
+
+// ===== LOCALSTORAGE =====
+const LS_KEY = 'kitorestура_admin';
+
+function lsSave() {
+  try {
+    const data = {
+      checkpoints: state.checkpoints,
+      gpxRoute: state.gpxRoute,
+      checkinRadius: state.checkinRadius,
+      participants: state.participants,
+      eventName: document.getElementById('set-event-name')?.value || '',
+      eventDate: document.getElementById('set-event-date')?.value || '',
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+    showSaveToast('✓ MENTVE');
+  } catch(e) { showSaveToast('Mentési hiba!'); }
+}
+
+function lsLoad() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (data.checkpoints && data.checkpoints.length > 0) state.checkpoints = data.checkpoints;
+    if (data.gpxRoute) state.gpxRoute = data.gpxRoute;
+    if (data.checkinRadius) state.checkinRadius = data.checkinRadius;
+    if (data.participants) state.participants = data.participants;
+    if (data.eventName && document.getElementById('set-event-name')) document.getElementById('set-event-name').value = data.eventName;
+    if (data.eventDate && document.getElementById('set-event-date')) document.getElementById('set-event-date').value = data.eventDate;
+    if (data.checkinRadius && document.getElementById('radius-slider')) {
+      document.getElementById('radius-slider').value = data.checkinRadius;
+      updateRadiusUI(data.checkinRadius);
+    }
+    if (data.eventName) document.querySelector('.login-sub').textContent = data.eventName.toUpperCase();
+    if (data.eventDate) {
+      const d = new Date(data.eventDate);
+      if (!isNaN(d)) {
+        const fmt = d.toLocaleDateString('hu-HU',{year:'numeric',month:'short',day:'numeric'}) + ' · ' + d.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'});
+        document.getElementById('event-display').textContent = fmt;
+      }
+    }
+    document.getElementById('thresh-label').textContent = state.checkinRadius;
+    return true;
+  } catch(e) { return false; }
+}
+
+function lsClear() {
+  if (!confirm('Biztosan törlöd az összes mentett adatot (útvonal, pontok, résztvevők, beállítások)?')) return;
+  localStorage.removeItem(LS_KEY);
+  state.checkpoints = DEMO_CPS.map(c=>({...c}));
+  state.gpxRoute = null;
+  state.checkinRadius = 100;
+  state.participants = [];
+  renderAdminCpMarkers();
+  refreshAdminCpList();
+  buildPartList();
+  if (state.adminGpxLayer) { state.adminMap.removeLayer(state.adminGpxLayer); state.adminGpxLayer = null; }
+  showSaveToast('Adatok törölve');
+}
+
+function showSaveToast(msg) {
+  let t = document.getElementById('save-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'save-toast';
+    t.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#2a2318;border:1px solid #3d4a2e;color:#8fa89a;font-family:Bebas Neue,sans-serif;font-size:14px;letter-spacing:3px;padding:8px 20px;z-index:9999;transition:opacity 0.4s;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.style.opacity = '0', 2000);
+}
+
+// Auto-save on admin actions
+const _origRenameCp = renameCp;
+renameCp = function(i, name) { _origRenameCp(i, name); };
+
+const _origDeleteCp = deleteCp;
+deleteCp = function(i) { _origDeleteCp(i); lsSave(); };
+
+// Load on startup
+window.addEventListener('DOMContentLoaded', () => { lsLoad(); });
+</script>
+<div id="install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#2a2318;border-top:2px solid #3d4a2e;padding:12px 16px;z-index:9999;display:none;align-items:center;gap:12px;">
+  <div style="flex:1;font-family:Barlow Condensed,sans-serif;font-size:14px;letter-spacing:1px;color:#e8e6e0;">Telepítsd az alkalmazást a telefonodra!</div>
+  <button onclick="installApp()" style="background:#7a1e1e;border:none;color:#e8e6e0;font-family:Bebas Neue,sans-serif;font-size:14px;letter-spacing:2px;padding:8px 16px;cursor:pointer;">TELEPÍTÉS</button>
+  <button onclick="document.getElementById("install-banner").style.display="none"" style="background:transparent;border:none;color:#8fa89a;font-size:18px;cursor:pointer;">✕</button>
+</div>
+<script>
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  const b=document.getElementById("install-banner");
+  if(b){b.style.display="flex";}
+});
+function installApp(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById("install-banner").style.display="none";});
+}
+window.addEventListener("appinstalled",()=>{
+  document.getElementById("install-banner").style.display="none";
+});
+</script>
+</body>
+</html>

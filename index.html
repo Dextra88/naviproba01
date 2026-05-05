@@ -213,8 +213,8 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
   <div class="login-wrap">
     <div class="login-header">
       <div class="login-logo">KITÖRÉS<br>TÚRA</div>
-      <div class="login-sub">TÉLI EXPEDÍCIÓ · 2025</div>
-      <div class="login-event" id="event-display">2025. DEC 14. · 09:00</div>
+      <div class="login-sub" id="login-sub">KITÖRÉS TÚRA</div>
+      <div class="login-event" id="event-display"></div>
     </div>
     <div class="field-group">
       <label class="field-label">E-mail cím</label>
@@ -399,11 +399,11 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
       <div class="settings-block-title">Túra adatok</div>
       <div class="field-group">
         <label class="field-label">Esemény neve</label>
-        <input class="field-input" id="set-event-name" value="Téli Expedíció 2025" style="font-size:16px;">
+        <input class="field-input" id="set-event-name" value="" placeholder="pl. Kitörés Túra 2026" style="font-size:16px;">
       </div>
       <div class="field-group" style="margin-top:12px;">
         <label class="field-label">Dátum és idő</label>
-        <input class="field-input" id="set-event-date" type="datetime-local" value="2025-12-14T09:00" style="font-size:16px;">
+        <input class="field-input" id="set-event-date" type="datetime-local" value="" style="font-size:16px;">
       </div>
     </div>
 
@@ -1102,9 +1102,11 @@ function saveSettings() {
   if (date) {
     const d = new Date(date);
     const fmt = d.toLocaleDateString('hu-HU',{year:'numeric',month:'short',day:'numeric'}) + ' · ' + d.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('event-display').textContent = fmt;
+    const el = document.getElementById('event-display');
+    el.textContent = fmt;
+    el.style.display = 'inline-block';
   }
-  if (name) document.querySelector('.login-sub').textContent = name.toUpperCase();
+  if (name) document.getElementById('login-sub').textContent = name.toUpperCase();
   renderCpMarkersUser();
   lsSave();
   const msg = document.getElementById('save-confirm');
@@ -1221,13 +1223,17 @@ function lsLoad() {
       document.getElementById('radius-slider').value = data.checkinRadius;
       updateRadiusUI(data.checkinRadius);
     }
-    if (data.eventName) document.querySelector('.login-sub').textContent = data.eventName.toUpperCase();
+    if (data.eventName) document.getElementById('login-sub').textContent = data.eventName.toUpperCase();
     if (data.eventDate) {
       const d = new Date(data.eventDate);
       if (!isNaN(d)) {
         const fmt = d.toLocaleDateString('hu-HU',{year:'numeric',month:'short',day:'numeric'}) + ' · ' + d.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'});
-        document.getElementById('event-display').textContent = fmt;
+        const el = document.getElementById('event-display');
+        el.textContent = fmt;
+        el.style.display = 'inline-block';
       }
+    } else {
+      document.getElementById('event-display').style.display = 'none';
     }
     document.getElementById('thresh-label').textContent = state.checkinRadius;
     return true;

@@ -333,9 +333,9 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
       </div>
       <div class="gpx-upload-area">
         <div class="gpx-row">
-          <span class="gpx-label" id="gpx-filename">GPX útvonal feltöltés:</span>
+          <span class="gpx-label" id="gpx-filename">GPX / KML útvonal:</span>
           <label class="gpx-btn" for="gpx-file-input">TALLÓZ</label>
-          <input type="file" id="gpx-file-input" accept=".gpx" style="display:none" onchange="loadGPX(this)">
+          <input type="file" id="gpx-file-input" accept=".gpx,.kml" style="display:none" onchange="loadRouteFile(this)">
           <button id="gpx-del-btn" onclick="deleteGPX()" style="display:none;background:transparent;border:1px solid rgba(122,30,30,0.5);color:#e07070;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;padding:5px 8px;cursor:pointer;">TÖRÖL</button>
         </div>
         <div class="gpx-status" id="gpx-status"></div>
@@ -780,7 +780,7 @@ function initAdminMap() {
   if (state.gpxRoute && state.gpxRoute.length > 0) {
     state.adminGpxLayer = L.polyline(state.gpxRoute, {color:'#8fa89a', weight:4, opacity:0.9}).addTo(state.adminMap);
     state.adminMap.fitBounds(state.adminGpxLayer.getBounds(), {padding:[30,30]});
-    updateGpxUI(true);
+    updateGpxUI(true, '', state.gpxRoute.length);
   }
 
   state.adminMap.on('click', onAdminMapClick);
@@ -927,58 +927,130 @@ function setAdminTool(tool) {
   }
 }
 
-// ===== GPX UPLOAD =====
-function loadGPX(input) {
+// ===== GPX / KML UPLOAD =====
+function loadRouteFile(input) {
   const file = input.files[0];
   if (!file) return;
+  const isKml = file.name.toLowerCase().endsWith('.kml');
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(e.target.result, 'text/xml');
-      if (xml.querySelector('parsererror')) throw new Error('XML parse error');
-
-      const trkpts = xml.querySelectorAll('trkpt');
-      const rtepts = xml.querySelectorAll('rtept');
-      const wpts = xml.querySelectorAll('wpt');
-      const pts = trkpts.length > 0 ? trkpts : rtepts;
-
-      if (pts.length > 0) {
-        state.gpxRoute = Array.from(pts).map(pt => [
-          parseFloat(pt.getAttribute('lat')),
-          parseFloat(pt.getAttribute('lon'))
-        ]).filter(p => !isNaN(p[0]) && !isNaN(p[1]));
-
-        if (state.adminGpxLayer) state.adminMap.removeLayer(state.adminGpxLayer);
-        state.adminGpxLayer = L.polyline(state.gpxRoute, {
-          color:'#8fa89a', weight:4, opacity:0.9
-        }).addTo(state.adminMap);
-        state.adminMap.fitBounds(state.adminGpxLayer.getBounds(), {padding:[30,30]});
-        updateGpxUI(true);
-      }
-
-      if (wpts.length > 0) {
-        state.checkpoints = Array.from(wpts).map((wpt, i) => {
-          const lat = parseFloat(wpt.getAttribute('lat'));
-          const lng = parseFloat(wpt.getAttribute('lon'));
-          const nameEl = wpt.querySelector('name');
-          const name = nameEl ? nameEl.textContent.trim() : (i===0?'Rajt':i===wpts.length-1?'Cél':i+'. Pont');
-          return {name, lat, lng, km:0};
-        });
-        recalcKm();
-        renderAdminCpMarkers();
-        refreshAdminCpList();
-      }
-
-      lsSave();
+      if (isKml) parseKML(e.target.result, file.name);
+      else parseGPX(e.target.result, file.name);
     } catch(err) {
       const status = document.getElementById('gpx-status');
-      status.textContent = 'Hiba: érvénytelen GPX fájl (' + err.message + ')';
+      status.textContent = 'Hiba: ' + err.message;
       status.style.display = 'block';
     }
     input.value = '';
   };
   reader.readAsText(file, 'UTF-8');
+}
+
+function loadGPX(input) { loadRouteFile(input); }
+
+function parseGPX(text, filename) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(text, 'text/xml');
+  if (xml.querySelector('parsererror')) throw new Error('Érvénytelen GPX fájl');
+  const trkpts = xml.querySelectorAll('trkpt');
+  const rtepts = xml.querySelectorAll('rtept');
+  const wpts = xml.querySelectorAll('wpt');
+  const pts = trkpts.length > 0 ? trkpts : rtepts;
+  if (pts.length === 0 && wpts.length === 0) throw new Error('Nem találhatók koordináták');
+  if (pts.length > 0) {
+    state.gpxRoute = Array.from(pts).map(pt => [
+      parseFloat(pt.getAttribute('lat')),
+      parseFloat(pt.getAttribute('lon'))
+    ]).filter(p => !isNaN(p[0]) && !isNaN(p[1]));
+    applyRouteToMap(state.gpxRoute, filename, state.gpxRoute.length);
+  }
+  if (wpts.length > 0) {
+    state.checkpoints = Array.from(wpts).map((wpt, i) => {
+      const lat = parseFloat(wpt.getAttribute('lat'));
+      const lng = parseFloat(wpt.getAttribute('lon'));
+      const nameEl = wpt.querySelector('name');
+      const name = nameEl ? nameEl.textContent.trim() : (i===0?'Rajt':i===wpts.length-1?'Cél':i+'. Pont');
+      return {name, lat, lng, km:0};
+    });
+    recalcKm(); renderAdminCpMarkers(); refreshAdminCpList();
+  }
+  lsSave();
+}
+
+function parseKML(text, filename) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(text, 'text/xml');
+  if (xml.querySelector('parsererror')) throw new Error('Érvénytelen KML fájl');
+  const coords = [];
+
+  // LineString és MultiGeometry
+  xml.querySelectorAll('LineString coordinates').forEach(el => {
+    el.textContent.trim().split(/\s+/).forEach(pair => {
+      const p = pair.split(',');
+      if (p.length >= 2) {
+        const lng = parseFloat(p[0]), lat = parseFloat(p[1]);
+        if (!isNaN(lat) && !isNaN(lng)) coords.push([lat, lng]);
+      }
+    });
+  });
+
+  // gx:Track coord
+  if (coords.length === 0) {
+    xml.querySelectorAll('coord').forEach(el => {
+      const p = el.textContent.trim().split(/\s+/);
+      if (p.length >= 2) {
+        const lng = parseFloat(p[0]), lat = parseFloat(p[1]);
+        if (!isNaN(lat) && !isNaN(lng)) coords.push([lat, lng]);
+      }
+    });
+  }
+
+  if (coords.length === 0) throw new Error('Nem találhatók útvonal koordináták a KML fájlban');
+
+  state.gpxRoute = coords;
+  applyRouteToMap(coords, filename, coords.length);
+
+  // Point Placemarks mint ellenőrzőpontok
+  const cpList = [];
+  xml.querySelectorAll('Placemark').forEach(pm => {
+    const pointCoord = pm.querySelector('Point coordinates');
+    if (!pointCoord) return;
+    const p = pointCoord.textContent.trim().split(',');
+    if (p.length < 2) return;
+    const lng = parseFloat(p[0]), lat = parseFloat(p[1]);
+    if (isNaN(lat) || isNaN(lng)) return;
+    const nameEl = pm.querySelector('name');
+    const name = nameEl ? nameEl.textContent.trim() : (cpList.length===0?'Rajt':cpList.length+'. Pont');
+    cpList.push({name, lat, lng, km:0});
+  });
+  if (cpList.length > 0) {
+    state.checkpoints = cpList;
+    recalcKm(); renderAdminCpMarkers(); refreshAdminCpList();
+  }
+  lsSave();
+}
+
+function applyRouteToMap(coords, filename, pointCount) {
+  if (state.adminGpxLayer) state.adminMap.removeLayer(state.adminGpxLayer);
+  state.adminGpxLayer = L.polyline(coords, {color:'#8fa89a', weight:4, opacity:0.9}).addTo(state.adminMap);
+  state.adminMap.fitBounds(state.adminGpxLayer.getBounds(), {padding:[30,30]});
+  updateGpxUI(true, filename, pointCount);
+}
+
+function updateGpxUI(hasGpx, filename, pointCount) {
+  const delBtn = document.getElementById('gpx-del-btn');
+  const status = document.getElementById('gpx-status');
+  if (hasGpx && state.gpxRoute) {
+    if (delBtn) delBtn.style.display = 'block';
+    if (status) {
+      status.textContent = '✓ ' + (filename||'') + ' — ' + (pointCount||state.gpxRoute.length) + ' pont';
+      status.style.display = 'block';
+    }
+  } else {
+    if (delBtn) delBtn.style.display = 'none';
+    if (status) { status.textContent=''; status.style.display='none'; }
+  }
 }
 
 // ===== ADMIN SETTINGS =====

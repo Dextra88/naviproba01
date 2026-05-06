@@ -537,16 +537,40 @@ function doLogin(){
   const u=state.participants.find(u=>u.email.toLowerCase()===em&&u.code===co);
   if(u){
     state.user=u;
-    state.currentCp=0;
-    state.startTime=null;
     document.getElementById('login-error').style.display='none';
     const badge=u.name.split(' ').slice(-1)[0].toUpperCase()+' · '+u.code;
     document.getElementById('map-user-badge').textContent=badge;
     document.getElementById('cp-user-badge').textContent=badge;
+
+    // Check for saved progress
+    const saved=loadTourProgress(em);
+    if(saved && saved.currentCp > 0){
+      const cpName=state.checkpoints[saved.currentCp]?.name||'';
+      const resume=confirm(
+        'Folytatod a megkezdett túrát?\n\n'+
+        'Mentett haladás: '+saved.currentCp+' / '+state.checkpoints.length+' pont\n'+
+        'Következő pont: '+cpName
+      );
+      if(resume){
+        state.currentCp=saved.currentCp;
+        state.startTime=saved.startTime;
+      } else {
+        state.currentCp=0;
+        state.startTime=null;
+        clearTourProgress();
+      }
+    } else {
+      state.currentCp=0;
+      state.startTime=null;
+    }
+
     showScreen('s-map');
     initUserMap();
     buildCpList();
     startGPS();
+    if(state.startTime&&state.timeLimitMs){
+      startCountdown();
+    }
   } else {
     document.getElementById('login-error').style.display='block';
   }
@@ -566,8 +590,43 @@ function backToLogin(){
   showScreen('s-login');
 }
 
+const TOUR_KEY = 'hazajaro_tour_progress';
+
+function saveTourProgress(){
+  try{
+    const data={
+      userEmail: state.user?.email,
+      currentCp: state.currentCp,
+      startTime: state.startTime,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(TOUR_KEY, JSON.stringify(data));
+  }catch(e){}
+}
+
+function loadTourProgress(email){
+  try{
+    const raw=localStorage.getItem(TOUR_KEY);
+    if(!raw)return false;
+    const data=JSON.parse(raw);
+    // Csak akkor állítjuk vissza ha ugyanaz a felhasználó és ma indult
+    if(data.userEmail!==email)return false;
+    const savedDate=new Date(data.savedAt).toDateString();
+    const today=new Date().toDateString();
+    if(savedDate!==today)return false;
+    // Ha már célba ért, ne állítsuk vissza
+    if(data.currentCp>=state.checkpoints.length)return false;
+    return data;
+  }catch(e){return false;}
+}
+
+function clearTourProgress(){
+  localStorage.removeItem(TOUR_KEY);
+}
+
 function abandonTour(){
   if(!confirm('Biztosan feladod a túrát?')) return;
+  clearTourProgress();
   finishTour(true);
 }
 
@@ -592,7 +651,12 @@ function renderCpMarkersUser(){
   state.checkpoints.forEach((cp,i)=>{
     const sc=i<state.currentCp?'done':i===state.currentCp?'active':'locked';
     const lbl=i===0?'R':i===state.checkpoints.length-1?'C':i;
-    const colors={done:'background:#5a7040;border-color:#8fa89a;color:#e8e6e0',active:'background:#8fa89a;border-color:#e8e6e0;color:#1e1a14',locked:'background:#2a2318;border-color:#3d4a2e;color:#8fa89a'};
+    // done=zöld, active=piros (következő), locked=sötét piros
+    const colors={
+      done:'background:#3a7a2a;border-color:#8fc870;color:#e8e6e0',
+      active:'background:#7a1e1e;border-color:#e07070;color:#e8e6e0',
+      locked:'background:#3a1a1a;border-color:#7a1e1e;color:#e07070'
+    };
     const icon=L.divIcon({className:'',html:`<div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;border:2px solid;${colors[sc]}">${sc==='done'?'✓':lbl}</div>`,iconSize:[30,30],iconAnchor:[15,15]});
     const m=L.marker([cp.lat,cp.lng],{icon}).addTo(state.map);
     m.bindPopup(`<b style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;">${cp.name}</b><br><small style="color:#8fa89a;">${cp.km} km</small>${cp.openFrom||cp.openTo?`<br><small style="color:#b8a830;">⏰ ${cp.openFrom||'?'} – ${cp.openTo||'?'}</small>`:''}`);
@@ -748,6 +812,7 @@ function doCheckin(){
   updateCheckinBtn('success','✓ BEJELENTKEZVE');
   setTimeout(()=>{
     state.currentCp++;
+    saveTourProgress();
     if(state.currentCp>=state.checkpoints.length){
       finishTour(false);return;
     }
@@ -762,6 +827,7 @@ function doCheckin(){
 function finishTour(abandoned){
   if(state.gpsWatchId){navigator.geolocation.clearWatch(state.gpsWatchId);state.gpsWatchId=null;}
   if(state.countdownInterval){clearInterval(state.countdownInterval);state.countdownInterval=null;}
+  clearTourProgress();
   const elapsed=state.startTime?Date.now()-state.startTime:0;
   const totalCps=state.checkpoints.length;
   const doneCps=state.currentCp;

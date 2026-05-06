@@ -315,6 +315,9 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
         <div id="admin-cp-rows"><div class="no-cp-hint">Kattints a térképre pontok hozzáadásához.</div></div>
       </div>
     </div>
+    <div class="map-fab" style="bottom:230px;" onclick="centerAdminOnUser()" title="Pozícióm">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7" stroke-dasharray="4 2"/></svg>
+    </div>
   </div>
   <div class="bottom-nav">
     <button class="nav-btn active" onclick="switchAdminTab('map')">
@@ -456,6 +459,7 @@ let state = {
   map: null,
   adminMap: null,
   userMarker: null,
+  adminUserMarker: null,
   cpMarkers: [],
   adminCpMarkers: [],
   gpxLayer: null,
@@ -610,6 +614,21 @@ function updateUserMarker(lat,lng){
 function centerOnUser(){
   if(state.lastLat!==null&&state.map)state.map.setView([state.lastLat,state.lastLng],16);
   else showSaveToast('GPS pozíció még nem elérhető');
+}
+
+function centerAdminOnUser(){
+  if(!state.adminMap){showSaveToast('Térkép még nem töltött be');return;}
+  if(!navigator.geolocation){showSaveToast('GPS nem elérhető');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude,lng=pos.coords.longitude;
+    state.adminMap.setView([lat,lng],16);
+    const icon=L.divIcon({className:'',html:`<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px #2563eb;"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
+    if(state.adminUserMarker)state.adminMap.removeLayer(state.adminUserMarker);
+    state.adminUserMarker=L.marker([lat,lng],{icon,zIndexOffset:1000}).addTo(state.adminMap);
+    showSaveToast('GPS pozíció megtalálva');
+  },err=>{
+    showSaveToast('GPS hiba: '+(err.code===1?'Engedély megtagadva':'Nem sikerült'));
+  },{enableHighAccuracy:true,timeout:10000});
 }
 
 function buildCpList(){
@@ -1323,6 +1342,9 @@ window.addEventListener('DOMContentLoaded',()=>{lsLoad();});
   <button onclick="installApp()" style="background:#7a1e1e;border:none;color:#e8e6e0;font-family:Bebas Neue,sans-serif;font-size:13px;letter-spacing:2px;padding:7px 14px;cursor:pointer;">TELEPÍTÉS</button>
   <button onclick="document.getElementById('install-banner').style.display='none'" style="background:transparent;border:none;color:#8fa89a;font-size:16px;cursor:pointer;">✕</button>
 </div>
+<div id="offline-banner" style="display:none;position:fixed;top:48px;left:0;right:0;background:rgba(122,30,30,0.92);border-bottom:1px solid #9a2a2a;padding:6px 14px;z-index:8999;text-align:center;font-family:Bebas Neue,sans-serif;font-size:13px;letter-spacing:2px;color:#e8e6e0;">
+  ⚡ OFFLINE MÓD — Térkép csempék cache-ből töltődnek
+</div>
 <script>
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 let deferredPrompt=null;
@@ -1336,6 +1358,19 @@ function installApp(){
   deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('install-banner').style.display='none';});
 }
 window.addEventListener('appinstalled',()=>{document.getElementById('install-banner').style.display='none';});
+
+// Offline detection
+function updateOnlineStatus(){
+  const banner=document.getElementById('offline-banner');
+  if(!navigator.onLine){
+    banner.style.display='block';
+  } else {
+    banner.style.display='none';
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
 </script>
 </body>
 </html>

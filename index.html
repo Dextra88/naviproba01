@@ -1001,13 +1001,15 @@ function refreshAdminCpList(){
         </div>
         <button class="admin-cp-del" onclick="deleteCp(${i})">✕</button>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.05);">
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.05);flex-wrap:wrap;">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        <span style="font-size:11px;color:var(--frost);min-width:28px;">NYIT:</span>
-        <input type="datetime-local" value="${cp.openFrom||''}" onchange="setCpTime(${i},'openFrom',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:12px;padding:1px 3px;outline:none;flex:1;min-width:0;">
-        <span style="font-size:11px;color:var(--frost);min-width:28px;margin-left:4px;">ZÁRÁS:</span>
-        <input type="datetime-local" value="${cp.openTo||''}" onchange="setCpTime(${i},'openTo',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:12px;padding:1px 3px;outline:none;flex:1;min-width:0;">
-        <span style="font-size:10px;color:${cp.openFrom||cp.openTo?'#8fc870':'var(--frost)'};margin-left:4px;">${cp.openFrom||cp.openTo?'AKTÍV':'MINDIG'}</span>
+        <span style="font-size:11px;color:var(--frost);">NYIT:</span>
+        <input type="datetime-local" value="${cp.openFrom||''}" onchange="setCpTime(${i},'openFrom',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:12px;padding:1px 3px;outline:none;flex:1;min-width:120px;">
+        <button onclick="setCpTime(${i},'openFrom','')" title="Törlés" style="background:transparent;border:none;color:#7a1e1e;font-size:13px;cursor:pointer;padding:0 2px;flex-shrink:0;">✕</button>
+        <span style="font-size:11px;color:var(--frost);">ZÁRÁS:</span>
+        <input type="datetime-local" value="${cp.openTo||''}" onchange="setCpTime(${i},'openTo',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:12px;padding:1px 3px;outline:none;flex:1;min-width:120px;">
+        <button onclick="setCpTime(${i},'openTo','')" title="Törlés" style="background:transparent;border:none;color:#7a1e1e;font-size:13px;cursor:pointer;padding:0 2px;flex-shrink:0;">✕</button>
+        <span style="font-size:10px;color:${cp.openFrom||cp.openTo?'#8fc870':'var(--frost)'};margin-left:2px;">${cp.openFrom||cp.openTo?'AKTÍV':'MINDIG'}</span>
       </div>
     </div>`).join('');
 }
@@ -1016,8 +1018,9 @@ function renameCp(i,name){if(state.checkpoints[i])state.checkpoints[i].name=name
 
 function setCpTime(i,field,val){
   if(!state.checkpoints[i])return;
-  state.checkpoints[i][field]=val;
-  refreshAdminCpList();lsSave();
+  state.checkpoints[i][field]=val||'';
+  refreshAdminCpList();
+  lsSave();
 }
 
 function deleteCp(i){
@@ -1330,6 +1333,12 @@ function lsClear(){
   if(state.adminMap){renderAdminCpMarkers();refreshAdminCpList();}
   if(state.adminGpxLayer){state.adminMap.removeLayer(state.adminGpxLayer);state.adminGpxLayer=null;}
   updateGpxUI(false);buildPartList();applyBranding();
+  // Reset settings fields
+  const sn=document.getElementById('set-app-name');if(sn)sn.value='HAZAJÁRÓ\nTÚRÁK';
+  const ss=document.getElementById('set-app-sub');if(ss)ss.value='TÚRA ALKALMAZÁS';
+  const se=document.getElementById('set-event-name');if(se)se.value='';
+  const tl=document.getElementById('set-time-limit');if(tl)tl.value='';
+  const rs=document.getElementById('radius-slider');if(rs){rs.value=100;updateRadiusUI(100);}
   showSaveToast('Adatok törölve');
 }
 

@@ -273,10 +273,9 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
   <h2 id="success-title">TELJESÍTVE!</h2>
   <p id="success-msg">Gratulálunk, sikeresen befejezted a túrát!</p>
   <div class="finish-stats">
-    <div class="fstat"><div class="fstat-val" id="fin-km">—</div><div class="fstat-lbl">Km · Szint</div></div>
+    <div class="fstat"><div class="fstat-val" id="fin-km">—</div><div class="fstat-lbl">Km</div></div>
     <div class="fstat"><div class="fstat-val" id="fin-cp">—</div><div class="fstat-lbl">Pont</div></div>
-    <div class="fstat"><div class="fstat-val" id="fin-time">—</div><div class="fstat-lbl">Idő</div></div>
-    <div class="fstat"><div class="fstat-val" id="fin-limit">—</div><div class="fstat-lbl">Szintidő</div></div>
+    <div class="fstat" style="grid-column:span 2;"><div class="fstat-val" id="fin-time">—</div><div class="fstat-lbl">Megtett idő</div></div>
   </div>
   <button class="btn-back-login" onclick="backToLogin()">VISSZA A FŐOLDALRA</button>
 </div>
@@ -485,10 +484,11 @@ function haversine(lat1,lng1,lat2,lng2){
 function isCpOpen(cp){
   if(!cp.openFrom&&!cp.openTo)return true;
   const now=new Date();
-  const hhmm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  if(cp.openFrom&&!cp.openTo)return hhmm>=cp.openFrom;
-  if(!cp.openFrom&&cp.openTo)return hhmm<=cp.openTo;
-  return hhmm>=cp.openFrom&&hhmm<=cp.openTo;
+  const from=cp.openFrom?new Date(cp.openFrom):null;
+  const to=cp.openTo?new Date(cp.openTo):null;
+  if(from&&!to)return now>=from;
+  if(!from&&to)return now<=to;
+  return now>=from&&now<=to;
 }
 
 function showScreen(id){
@@ -659,7 +659,7 @@ function renderCpMarkersUser(){
     };
     const icon=L.divIcon({className:'',html:`<div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;border:2px solid;${colors[sc]}">${sc==='done'?'✓':lbl}</div>`,iconSize:[30,30],iconAnchor:[15,15]});
     const m=L.marker([cp.lat,cp.lng],{icon}).addTo(state.map);
-    m.bindPopup(`<b style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;">${cp.name}</b><br><small style="color:#8fa89a;">${cp.km} km</small>${cp.openFrom||cp.openTo?`<br><small style="color:#b8a830;">⏰ ${cp.openFrom||'?'} – ${cp.openTo||'?'}</small>`:''}`);
+    m.bindPopup(`<b style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;">${cp.name}</b><br><small style="color:#8fa89a;">${cp.km} km</small>${cp.openFrom||cp.openTo?`<br><small style="color:#b8a830;">⏰ ${cp.openFrom?new Date(cp.openFrom).toLocaleString('hu-HU',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'?'} – ${cp.openTo?new Date(cp.openTo).toLocaleString('hu-HU',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'?'}</small>`:''}`);
     state.cpMarkers.push(m);
   });
   const cp=state.checkpoints[state.currentCp];
@@ -859,11 +859,9 @@ function finishTour(abandoned){
     msg.textContent='Sajnáljuk, '+(reason.join(' és '))+'. Legközelebb sikerülni fog!';
   }
 
-  const kmStr=state.gpxTotalKm?state.gpxTotalKm+' km'+(state.gpxElevation?' / +'+state.gpxElevation+'m':''):'—';
-  document.getElementById('fin-km').textContent=kmStr;
+  document.getElementById('fin-km').textContent=state.gpxTotalKm?state.gpxTotalKm+' km':'—';
   document.getElementById('fin-cp').textContent=doneCps+'/'+totalCps;
   document.getElementById('fin-time').textContent=elapsed>0?formatTime(elapsed):'—';
-  document.getElementById('fin-limit').textContent=state.timeLimitMs?formatHHMM(state.timeLimitMs):'—';
   showScreen('s-success');
 }
 
@@ -1006,10 +1004,10 @@ function refreshAdminCpList(){
       <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.05);">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         <span style="font-size:11px;color:var(--frost);min-width:28px;">NYIT:</span>
-        <input type="time" value="${cp.openFrom||''}" onchange="setCpTime(${i},'openFrom',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:13px;padding:1px 3px;outline:none;width:76px;">
-        <span style="font-size:11px;color:var(--frost);min-width:28px;">ZÁRÁS:</span>
-        <input type="time" value="${cp.openTo||''}" onchange="setCpTime(${i},'openTo',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:13px;padding:1px 3px;outline:none;width:76px;">
-        <span style="font-size:10px;color:${cp.openFrom||cp.openTo?'#8fc870':'var(--frost)'};">${cp.openFrom||cp.openTo?'AKTÍV':'MINDIG'}</span>
+        <input type="datetime-local" value="${cp.openFrom||''}" onchange="setCpTime(${i},'openFrom',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:12px;padding:1px 3px;outline:none;flex:1;min-width:0;">
+        <span style="font-size:11px;color:var(--frost);min-width:28px;margin-left:4px;">ZÁRÁS:</span>
+        <input type="datetime-local" value="${cp.openTo||''}" onchange="setCpTime(${i},'openTo',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:12px;padding:1px 3px;outline:none;flex:1;min-width:0;">
+        <span style="font-size:10px;color:${cp.openFrom||cp.openTo?'#8fc870':'var(--frost)'};margin-left:4px;">${cp.openFrom||cp.openTo?'AKTÍV':'MINDIG'}</span>
       </div>
     </div>`).join('');
 }

@@ -1283,7 +1283,7 @@ function exportConfig(){
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
-    a.download='hazajaro_config_'+new Date().toISOString().slice(0,10)+'.json';
+    a.download='config.json';
     a.click();
     showSaveToast('✓ EXPORTÁLVA');
   }catch(e){showSaveToast('Export hiba!');}
@@ -1334,7 +1334,35 @@ function showSaveToast(msg){
 }
 
 // Startup
-window.addEventListener('DOMContentLoaded',()=>{lsLoad();});
+window.addEventListener('DOMContentLoaded', () => {
+  const localLoaded = lsLoad();
+  // Auto-fetch config.json from server — alkalmazza ha újabb mint a helyi mentés
+  fetch('./config.json?v=' + Date.now())
+    .then(r => { if(!r.ok) throw new Error('no config'); return r.json(); })
+    .then(data => {
+      const localRaw = localStorage.getItem(LS_KEY);
+      const localSaved = localRaw ? (JSON.parse(localRaw).savedAt || 0) : 0;
+      const remoteSaved = data.savedAt || (data.exportedAt ? new Date(data.exportedAt).getTime() : 0);
+      if (!localLoaded || remoteSaved > localSaved) {
+        if(data.checkpoints) state.checkpoints = data.checkpoints;
+        if(data.gpxRoute) state.gpxRoute = data.gpxRoute;
+        if(data.gpxTotalKm != null) state.gpxTotalKm = data.gpxTotalKm;
+        if(data.gpxElevation != null) state.gpxElevation = data.gpxElevation;
+        if(data.checkinRadius) state.checkinRadius = data.checkinRadius;
+        if(data.participants) state.participants = data.participants;
+        if(data.appName) state.appName = data.appName;
+        if(data.appSub) state.appSub = data.appSub;
+        if(data.eventLabel != null) state.eventLabel = data.eventLabel;
+        if(data.timeLimitMs != null) state.timeLimitMs = data.timeLimitMs;
+        if(data.countdownVisible != null) state.countdownVisible = data.countdownVisible;
+        data.savedAt = remoteSaved || Date.now();
+        localStorage.setItem(LS_KEY, JSON.stringify(data));
+        applyBranding();
+        showSaveToast('✓ KONFIGURÁCIÓ FRISSÍTVE');
+      }
+    })
+    .catch(() => {}); // Nincs config.json — LocalStorage-t használja
+});
 </script>
 
 <div id="install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#2a2318;border-top:2px solid #3d4a2e;padding:11px 14px;z-index:9999;align-items:center;gap:10px;">

@@ -1001,26 +1001,77 @@ function refreshAdminCpList(){
         </div>
         <button class="admin-cp-del" onclick="deleteCp(${i})">✕</button>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.05);flex-wrap:wrap;">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        <span style="font-size:11px;color:var(--frost);">NYIT:</span>
-        <input type="datetime-local" value="${cp.openFrom||''}" onchange="setCpTime(${i},'openFrom',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:12px;padding:1px 3px;outline:none;flex:1;min-width:120px;">
-        <button onclick="setCpTime(${i},'openFrom','')" title="Törlés" style="background:transparent;border:none;color:#7a1e1e;font-size:13px;cursor:pointer;padding:0 2px;flex-shrink:0;">✕</button>
-        <span style="font-size:11px;color:var(--frost);">ZÁRÁS:</span>
-        <input type="datetime-local" value="${cp.openTo||''}" onchange="setCpTime(${i},'openTo',this.value)" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:12px;padding:1px 3px;outline:none;flex:1;min-width:120px;">
-        <button onclick="setCpTime(${i},'openTo','')" title="Törlés" style="background:transparent;border:none;color:#7a1e1e;font-size:13px;cursor:pointer;padding:0 2px;flex-shrink:0;">✕</button>
-        <span style="font-size:10px;color:${cp.openFrom||cp.openTo?'#8fc870':'var(--frost)'};margin-left:2px;">${cp.openFrom||cp.openTo?'AKTÍV':'MINDIG'}</span>
+      <div style="background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.05);padding:6px 8px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span style="font-size:11px;color:var(--frost);min-width:38px;">NYIT:</span>
+          <input type="datetime-local" id="cpfrom_${i}" value="${cp.openFrom||''}"
+            style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:2px;color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:13px;padding:4px 6px;outline:none;min-width:0;"
+            onchange="cpTimeChange(${i},'openFrom',this.value)">
+          <button onclick="clearCpTime(${i},'openFrom')" style="background:rgba(122,30,30,0.4);border:1px solid var(--blood);color:#e07070;font-size:12px;cursor:pointer;padding:3px 7px;border-radius:2px;flex-shrink:0;">✕</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span style="font-size:11px;color:var(--frost);min-width:38px;">ZÁRÁS:</span>
+          <input type="datetime-local" id="cpto_${i}" value="${cp.openTo||''}"
+            style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:2px;color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:13px;padding:4px 6px;outline:none;min-width:0;"
+            onchange="cpTimeChange(${i},'openTo',this.value)">
+          <button onclick="clearCpTime(${i},'openTo')" style="background:rgba(122,30,30,0.4);border:1px solid var(--blood);color:#e07070;font-size:12px;cursor:pointer;padding:3px 7px;border-radius:2px;flex-shrink:0;">✕</button>
+        </div>
+        <div style="margin-top:5px;font-size:10px;letter-spacing:1px;color:${cp.openFrom||cp.openTo?'#8fc870':'var(--frost)'};">${cp.openFrom||cp.openTo?'⏰ IDŐKORLÁT AKTÍV':'⏰ MINDIG NYITVA'}</div>
       </div>
     </div>`).join('');
 }
 
 function renameCp(i,name){if(state.checkpoints[i])state.checkpoints[i].name=name;}
 
-function setCpTime(i,field,val){
+function cpTimeChange(i,field,val){
   if(!state.checkpoints[i])return;
   state.checkpoints[i][field]=val||'';
-  refreshAdminCpList();
+  // Just update the status label without re-rendering the whole list
+  const cp=state.checkpoints[i];
+  const rows=document.getElementById('admin-cp-rows');
+  if(!rows)return;
+  const allRows=rows.querySelectorAll('.admin-cp-row');
+  if(allRows[i]){
+    const lbl=allRows[i].querySelector('div[style*="MINDIG"], div[style*="AKTÍV"]');
+    if(lbl){
+      const active=cp.openFrom||cp.openTo;
+      lbl.textContent=active?'⏰ IDŐKORLÁT AKTÍV':'⏰ MINDIG NYITVA';
+      lbl.style.color=active?'#8fc870':'var(--frost)';
+    }
+  }
   lsSave();
+}
+
+function clearCpTime(i,field){
+  if(!state.checkpoints[i])return;
+  state.checkpoints[i][field]='';
+  // Clear the input visually
+  const idMap={'openFrom':'cpfrom_'+i,'openTo':'cpto_'+i};
+  const inp=document.getElementById(idMap[field]);
+  if(inp)inp.value='';
+  // Update status label
+  const cp=state.checkpoints[i];
+  const rows=document.getElementById('admin-cp-rows');
+  if(rows){
+    const allRows=rows.querySelectorAll('.admin-cp-row');
+    if(allRows[i]){
+      const divs=allRows[i].querySelectorAll('div');
+      divs.forEach(d=>{
+        if(d.textContent.includes('IDŐKORLÁT')||d.textContent.includes('MINDIG')){
+          const active=cp.openFrom||cp.openTo;
+          d.textContent=active?'⏰ IDŐKORLÁT AKTÍV':'⏰ MINDIG NYITVA';
+          d.style.color=active?'#8fc870':'var(--frost)';
+        }
+      });
+    }
+  }
+  lsSave();
+}
+
+function setCpTime(i,field,val){
+  cpTimeChange(i,field,val);
 }
 
 function deleteCp(i){

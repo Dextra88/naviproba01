@@ -234,8 +234,13 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
       </div>
       <button class="btn-login" style="background:var(--blood2);" onclick="doAdminLogin()">ADMIN BELÉPÉS</button>
     </div>
-    <div class="admin-link">SZERVEZŐ: <span onclick="toggleAdminSection()">ADMIN PANEL</span></div>
-    <div style="margin-top:28px;text-align:center;font-size:10px;letter-spacing:2px;color:rgba(143,168,154,0.35);">© HHTE 2026</div>
+
+    <div style="margin-top:28px;text-align:center;">
+      <div style="font-size:11px;letter-spacing:2px;color:var(--frost);text-transform:uppercase;">Szervező</div>
+      <div style="font-size:13px;letter-spacing:1px;color:var(--mist);margin-top:4px;line-height:1.4;">Hazajáró Honismereti<br>és Turista Egylet</div>
+      <div class="admin-link" style="margin-top:12px;">ADMIN: <span onclick="toggleAdminSection()">BELÉPÉS</span></div>
+      <div style="margin-top:16px;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,0.7);">© HHTE 2026</div>
+    </div>
   </div>
 </div>
 
@@ -322,7 +327,22 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
     <div class="fstat"><div class="fstat-val" id="fin-cp">—</div><div class="fstat-lbl">Pont</div></div>
     <div class="fstat" style="grid-column:span 2;"><div class="fstat-val" id="fin-time">—</div><div class="fstat-lbl">Megtett idő</div></div>
   </div>
-  <button class="btn-back-login" onclick="backToLogin()">VISSZA A FŐOLDALRA</button>
+
+  <!-- Csillagos értékelés — csak sikeres teljesítésnél -->
+  <div id="rating-section" style="display:none;margin-top:24px;text-align:center;width:100%;max-width:320px;">
+    <div style="font-size:12px;letter-spacing:3px;color:var(--frost);margin-bottom:10px;">ÉRTÉKELD A TÚRÁT</div>
+    <div id="star-row" style="display:flex;justify-content:center;gap:10px;">
+      <span onclick="rateTour(1)" class="star" style="font-size:36px;cursor:pointer;color:rgba(255,255,255,0.2);transition:color 0.15s;">★</span>
+      <span onclick="rateTour(2)" class="star" style="font-size:36px;cursor:pointer;color:rgba(255,255,255,0.2);transition:color 0.15s;">★</span>
+      <span onclick="rateTour(3)" class="star" style="font-size:36px;cursor:pointer;color:rgba(255,255,255,0.2);transition:color 0.15s;">★</span>
+      <span onclick="rateTour(4)" class="star" style="font-size:36px;cursor:pointer;color:rgba(255,255,255,0.2);transition:color 0.15s;">★</span>
+      <span onclick="rateTour(5)" class="star" style="font-size:36px;cursor:pointer;color:rgba(255,255,255,0.2);transition:color 0.15s;">★</span>
+    </div>
+    <div id="rating-thanks" style="display:none;font-size:13px;letter-spacing:1px;color:#8fc870;margin-top:8px;">Köszönjük az értékelést!</div>
+  </div>
+
+  <p style="margin-top:20px;font-size:13px;color:var(--frost);letter-spacing:0.5px;">Köszönjük, várunk szeretettel a következő túránkon is!</p>
+  <button class="btn-back-login" onclick="backToLogin()" style="margin-top:16px;">VISSZA A FŐOLDALRA</button>
 </div>
 
 <!-- ADMIN MAP -->
@@ -900,6 +920,14 @@ function finishTour(abandoned){
   const allDone=doneCps>=totalCps;
   const inTime=!state.timeLimitMs||(elapsed<=state.timeLimitMs);
   const success=!abandoned&&allDone&&inTime;
+
+  // Értékelés megjelenítése csak sikeres teljesítésnél
+  const ratingSection=document.getElementById('rating-section');
+  if(ratingSection)ratingSection.style.display=success?'block':'none';
+  // Reset stars
+  document.querySelectorAll('.star').forEach(s=>s.style.color='rgba(255,255,255,0.2)');
+  document.getElementById('rating-thanks').style.display='none';
+
   // Save result to Firebase
   fbSaveFinish(state.user, success, doneCps, totalCps, elapsed);
 
@@ -933,7 +961,23 @@ function finishTour(abandoned){
   showScreen('s-success');
 }
 
-// ===== COUNTDOWN =====
+function rateTour(stars){
+  // Highlight stars
+  document.querySelectorAll('.star').forEach((s,i)=>{
+    s.style.color=i<stars?'#f0c040':'rgba(255,255,255,0.2)';
+  });
+  document.getElementById('rating-thanks').style.display='block';
+  // Save rating to Firebase
+  if(window.fbReady&&state.user){
+    window.fbAddDoc(window.fbCollection(window.fbDb,'ratings'),{
+      name:state.user.name,
+      email:state.user.email,
+      stars:stars,
+      timestamp:window.fbServerTimestamp(),
+      date:new Date().toISOString().slice(0,10),
+    }).catch(()=>{});
+  }
+}
 function startCountdown(){
   if(!state.timeLimitMs||!state.countdownVisible)return;
   const bar=document.getElementById('countdown-bar');

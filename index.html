@@ -12,6 +12,37 @@
 <meta name="theme-color" content="#1e1a14">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBzF5PQjHmd037D5VaCAjYJzCgIJh0ecWE",
+  authDomain: "hazajarotura-app.firebaseapp.com",
+  projectId: "hazajarotura-app",
+  storageBucket: "hazajarotura-app.firebasestorage.app",
+  messagingSenderId: "342663883217",
+  appId: "1:342663883217:web:57605b8bdbcbcc68f858f0"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+// Expose to global scope
+window.fbDb = db;
+window.fbDoc = doc;
+window.fbGetDoc = getDoc;
+window.fbSetDoc = setDoc;
+window.fbCollection = collection;
+window.fbAddDoc = addDoc;
+window.fbOnSnapshot = onSnapshot;
+window.fbQuery = query;
+window.fbOrderBy = orderBy;
+window.fbLimit = limit;
+window.fbServerTimestamp = serverTimestamp;
+window.fbReady = true;
+window.dispatchEvent(new Event('fb-ready'));
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -419,7 +450,24 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
       <p class="info-text">Exportálással letöltheted a teljes konfigurációt (pontok, résztvevők, beállítások) egy JSON fájlba, amit feltölthetsz a GitHub-ra vagy egy másik eszközre importálhatsz.</p>
     </div>
 
-    <button class="btn-save-settings" onclick="saveSettings()">BEÁLLÍTÁSOK MENTÉSE</button>
+    <div class="settings-block">
+      <div class="settings-block-title">Követés — Mai eredmények</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button onclick="loadAdminResults()" style="flex:1;background:var(--moss);border:1px solid var(--moss2);color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:9px;cursor:pointer;">FRISSÍTÉS</button>
+      </div>
+      <div id="admin-results-list" style="max-height:220px;overflow-y:auto;">
+        <div style="font-size:12px;color:var(--frost);text-align:center;padding:10px;">Kattints a Frissítés gombra</div>
+      </div>
+    </div>
+
+    <div class="settings-block">
+      <div class="settings-block-title">Résztvevő keresés</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input class="field-input" id="search-part-input" placeholder="Email vagy kód..." style="font-size:14px;flex:1;">
+        <button onclick="searchParticipant()" style="background:var(--moss);border:none;color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:9px 14px;cursor:pointer;">KERES</button>
+      </div>
+      <div id="search-result" style="max-height:200px;overflow-y:auto;"></div>
+    </div>
     <div class="save-confirm" id="save-confirm">✓ MENTVE</div>
     <button onclick="lsClear()" style="width:100%;margin-top:10px;background:transparent;border:1px solid rgba(122,30,30,.4);color:#e07070;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;padding:10px;cursor:pointer;">ÖSSZES ADAT TÖRLÉSE</button>
   </div>
@@ -813,6 +861,9 @@ function doCheckin(){
   setTimeout(()=>{
     state.currentCp++;
     saveTourProgress();
+    // Save checkin to Firebase
+    const checkedCp=state.checkpoints[state.currentCp-1];
+    if(checkedCp)fbSaveCheckin(state.user, state.currentCp-1, checkedCp.name);
     if(state.currentCp>=state.checkpoints.length){
       finishTour(false);return;
     }
@@ -834,6 +885,8 @@ function finishTour(abandoned){
   const allDone=doneCps>=totalCps;
   const inTime=!state.timeLimitMs||(elapsed<=state.timeLimitMs);
   const success=!abandoned&&allDone&&inTime;
+  // Save result to Firebase
+  fbSaveFinish(state.user, success, doneCps, totalCps, elapsed);
 
   const icon=document.getElementById('success-icon');
   const title=document.getElementById('success-title');
@@ -1351,6 +1404,8 @@ function lsSave(){
     };
     localStorage.setItem(LS_KEY,JSON.stringify(data));
     showSaveToast('✓ MENTVE');
+    // Also save to Firebase (async, non-blocking)
+    fbSaveConfig();
   }catch(e){showSaveToast('Mentési hiba!');}
 }
 
@@ -1393,7 +1448,152 @@ function lsClear(){
   showSaveToast('Adatok törölve');
 }
 
-// ===== EXPORT / IMPORT =====
+// ===== FIREBASE =====
+async function fbSaveConfig(){
+  if(!window.fbReady)return;
+  try{
+    const data={
+      checkpoints:state.checkpoints,
+      checkinRadius:state.checkinRadius,
+      participants:state.participants,
+      appName:state.appName,appSub:state.appSub,eventLabel:state.eventLabel,
+      timeLimitMs:state.timeLimitMs||null,countdownVisible:state.countdownVisible,
+      gpxTotalKm:state.gpxTotalKm||null,
+      updatedAt:window.fbServerTimestamp(),
+    };
+    await window.fbSetDoc(window.fbDoc(window.fbDb,'config','main'),data);
+    showSaveToast('✓ FIREBASE MENTVE');
+  }catch(e){console.warn('Firebase save failed:',e);}
+}
+
+async function fbLoadConfig(){
+  if(!window.fbReady)return false;
+  try{
+    const snap=await window.fbGetDoc(window.fbDoc(window.fbDb,'config','main'));
+    if(!snap.exists())return false;
+    const data=snap.data();
+    if(data.checkpoints&&data.checkpoints.length>0)state.checkpoints=data.checkpoints;
+    if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
+    if(data.participants)state.participants=data.participants;
+    if(data.appName)state.appName=data.appName;
+    if(data.appSub)state.appSub=data.appSub;
+    if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
+    if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;
+    if(data.countdownVisible!=null)state.countdownVisible=data.countdownVisible;
+    if(data.gpxTotalKm!=null)state.gpxTotalKm=data.gpxTotalKm;
+    applyBranding();
+    return true;
+  }catch(e){console.warn('Firebase load failed:',e);return false;}
+}
+
+async function fbSaveCheckin(user, cpIndex, cpName){
+  if(!window.fbReady)return;
+  try{
+    await window.fbAddDoc(window.fbCollection(window.fbDb,'checkins'),{
+      name: user.name,
+      email: user.email,
+      code: user.code,
+      cpIndex: cpIndex,
+      cpName: cpName,
+      timestamp: window.fbServerTimestamp(),
+      date: new Date().toISOString().slice(0,10),
+    });
+  }catch(e){console.warn('Firebase checkin save failed:',e);}
+}
+
+async function fbSaveFinish(user, success, doneCps, totalCps, elapsedMs){
+  if(!window.fbReady)return;
+  try{
+    await window.fbAddDoc(window.fbCollection(window.fbDb,'results'),{
+      name: user.name,
+      email: user.email,
+      code: user.code,
+      success: success,
+      doneCps: doneCps,
+      totalCps: totalCps,
+      elapsedMs: elapsedMs,
+      elapsedFormatted: formatTime(elapsedMs),
+      timestamp: window.fbServerTimestamp(),
+      date: new Date().toISOString().slice(0,10),
+    });
+  }catch(e){console.warn('Firebase finish save failed:',e);}
+}
+
+// Admin: load checkins for a participant
+async function fbLoadParticipantDetail(email){
+  if(!window.fbReady)return[];
+  try{
+    const q=window.fbQuery(
+      window.fbCollection(window.fbDb,'checkins'),
+      window.fbOrderBy('timestamp','asc')
+    );
+    const snap=await new Promise((res,rej)=>{
+      const unsub=window.fbOnSnapshot(q,s=>{unsub();res(s);},rej);
+    });
+    return snap.docs.map(d=>d.data()).filter(d=>d.email===email);
+  }catch(e){return[];}
+}
+
+// Admin: load all results for today
+async function fbLoadTodayResults(){
+  if(!window.fbReady)return[];
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    const q=window.fbQuery(
+      window.fbCollection(window.fbDb,'results'),
+      window.fbOrderBy('timestamp','desc'),
+      window.fbLimit(200)
+    );
+    const snap=await new Promise((res,rej)=>{
+      const unsub=window.fbOnSnapshot(q,s=>{unsub();res(s);},rej);
+    });
+    return snap.docs.map(d=>d.data()).filter(d=>d.date===today);
+  }catch(e){return[];}
+}
+async function loadAdminResults(){
+  const list=document.getElementById('admin-results-list');
+  list.innerHTML='<div style="font-size:12px;color:var(--frost);text-align:center;padding:10px;">Betöltés...</div>';
+  const results=await fbLoadTodayResults();
+  if(results.length===0){list.innerHTML='<div style="font-size:12px;color:var(--frost);text-align:center;padding:10px;">Még nincs mai eredmény</div>';return;}
+  list.innerHTML=results.map(r=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+      <div style="width:28px;height:28px;border-radius:50%;background:${r.success?'var(--ok)':'var(--blood)'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${r.success?'✓':'✗'}</div>
+      <div style="flex:1;">
+        <div style="font-size:14px;color:var(--snow);">${r.name}</div>
+        <div style="font-size:11px;color:var(--frost);">${r.doneCps}/${r.totalCps} pont · ${r.elapsedFormatted||'—'}</div>
+      </div>
+      <div style="font-size:11px;color:${r.success?'#8fc870':'#e07070'};letter-spacing:1px;">${r.success?'SIKERES':'SIKERTELEN'}</div>
+    </div>`).join('');
+}
+
+async function searchParticipant(){
+  const q=document.getElementById('search-part-input').value.trim().toLowerCase();
+  const res=document.getElementById('search-result');
+  if(!q){res.innerHTML='<div style="font-size:12px;color:var(--frost);">Adj meg email címet vagy kódot</div>';return;}
+  res.innerHTML='<div style="font-size:12px;color:var(--frost);padding:8px 0;">Keresés...</div>';
+  const part=state.participants.find(p=>p.email.toLowerCase()===q||p.code.toLowerCase()===q);
+  if(!part){res.innerHTML='<div style="font-size:12px;color:#e07070;padding:8px 0;">Nem található résztvevő</div>';return;}
+  const checkins=await fbLoadParticipantDetail(part.email);
+  const totalCps=state.checkpoints.length;
+  res.innerHTML=`
+    <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:8px;">
+      <div style="font-size:15px;font-weight:500;color:var(--snow);">${part.name}</div>
+      <div style="font-size:12px;color:var(--frost);">${part.email} · ${part.code}</div>
+      <div style="font-size:12px;color:var(--mist);margin-top:2px;">${checkins.length} / ${totalCps} bejelentkezés</div>
+    </div>
+    ${checkins.length===0
+      ?'<div style="font-size:12px;color:var(--frost);">Még nincs bejelentkezés</div>'
+      :checkins.map(c=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--ok);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">✓</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;color:var(--snow);">${c.cpName||'—'}</div>
+            <div style="font-size:11px;color:var(--frost);">${c.timestamp?.toDate?c.timestamp.toDate().toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):''}</div>
+          </div>
+        </div>`).join('')
+    }`;
+}
+
 function exportConfig(){
   try{
     const data={
@@ -1460,32 +1660,49 @@ function showSaveToast(msg){
 // Startup
 window.addEventListener('DOMContentLoaded', () => {
   const localLoaded = lsLoad();
-  // Auto-fetch config.json from server — alkalmazza ha újabb mint a helyi mentés
-  fetch('./config.json?v=' + Date.now())
-    .then(r => { if(!r.ok) throw new Error('no config'); return r.json(); })
-    .then(data => {
-      const localRaw = localStorage.getItem(LS_KEY);
-      const localSaved = localRaw ? (JSON.parse(localRaw).savedAt || 0) : 0;
-      const remoteSaved = data.savedAt || (data.exportedAt ? new Date(data.exportedAt).getTime() : 0);
-      if (!localLoaded || remoteSaved > localSaved) {
-        if(data.checkpoints) state.checkpoints = data.checkpoints;
-        if(data.gpxRoute) state.gpxRoute = data.gpxRoute;
-        if(data.gpxTotalKm != null) state.gpxTotalKm = data.gpxTotalKm;
-        if(data.gpxElevation != null) state.gpxElevation = data.gpxElevation;
-        if(data.checkinRadius) state.checkinRadius = data.checkinRadius;
-        if(data.participants) state.participants = data.participants;
-        if(data.appName) state.appName = data.appName;
-        if(data.appSub) state.appSub = data.appSub;
-        if(data.eventLabel != null) state.eventLabel = data.eventLabel;
-        if(data.timeLimitMs != null) state.timeLimitMs = data.timeLimitMs;
-        if(data.countdownVisible != null) state.countdownVisible = data.countdownVisible;
-        data.savedAt = remoteSaved || Date.now();
-        localStorage.setItem(LS_KEY, JSON.stringify(data));
+
+  // Try Firebase first, then config.json fallback
+  async function tryRemoteLoad(){
+    // Wait for Firebase to be ready (max 3s)
+    if(!window.fbReady){
+      await new Promise(res=>{
+        const t=setTimeout(res,3000);
+        window.addEventListener('fb-ready',()=>{clearTimeout(t);res();},{once:true});
+      });
+    }
+    const fbLoaded = await fbLoadConfig();
+    if(fbLoaded){
+      applyBranding();
+      showSaveToast('✓ KONFIGURÁCIÓ BETÖLTVE');
+      return;
+    }
+    // Fallback: config.json
+    try{
+      const r=await fetch('./config.json?v='+Date.now());
+      if(!r.ok)return;
+      const data=await r.json();
+      const localRaw=localStorage.getItem(LS_KEY);
+      const localSaved=localRaw?(JSON.parse(localRaw).savedAt||0):0;
+      const remoteSaved=data.savedAt||(data.exportedAt?new Date(data.exportedAt).getTime():0);
+      if(!localLoaded||remoteSaved>localSaved){
+        if(data.checkpoints)state.checkpoints=data.checkpoints;
+        if(data.gpxRoute)state.gpxRoute=data.gpxRoute;
+        if(data.gpxTotalKm!=null)state.gpxTotalKm=data.gpxTotalKm;
+        if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
+        if(data.participants)state.participants=data.participants;
+        if(data.appName)state.appName=data.appName;
+        if(data.appSub)state.appSub=data.appSub;
+        if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
+        if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;
+        if(data.countdownVisible!=null)state.countdownVisible=data.countdownVisible;
+        data.savedAt=remoteSaved||Date.now();
+        localStorage.setItem(LS_KEY,JSON.stringify(data));
         applyBranding();
         showSaveToast('✓ KONFIGURÁCIÓ FRISSÍTVE');
       }
-    })
-    .catch(() => {}); // Nincs config.json — LocalStorage-t használja
+    }catch(e){}
+  }
+  tryRemoteLoad();
 });
 </script>
 

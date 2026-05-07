@@ -441,7 +441,7 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
       </div>
       <div style="font-size:11px;color:var(--frost);letter-spacing:.5px;margin-bottom:9px;line-height:1.6;">
         CSV: <span style="color:var(--snow);font-family:monospace;">Tóth,Péter,toth@email.hu,7A3</span><br>
-        Excel: 4 oszlop: <span style="color:var(--snow);font-family:monospace;">Vezeteknev | Utonev | Email | Kod</span>
+        Excel: 4 oszlop: <span style="color:var(--snow);font-family:monospace;">Vezeteknev | Utonev | Kod | Email</span>
       </div>
       <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap;">
         <input class="field-input" id="new-part-name" placeholder="Teljes név" style="font-size:13px;flex:3;min-width:100px;">
@@ -1407,8 +1407,8 @@ function parseXLSXRows(rows){
     if(ri===0)return; // skip header
     const veznev=String(row[0]||'').trim();
     const utonev=String(row[1]||'').trim();
-    const email=String(row[2]||'').trim().toLowerCase();
-    const code=String(row[3]||'').trim().toUpperCase();
+    const code=String(row[2]||'').trim().toUpperCase();
+    const email=String(row[3]||'').trim().toLowerCase();
     if(!veznev||!email||!code){skipped++;return;}
     const name=(veznev+' '+utonev).trim();
     if(state.participants.find(p=>p.email===email||p.code===code)){skipped++;return;}

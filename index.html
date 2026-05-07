@@ -15,6 +15,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzF5PQjHmd037D5VaCAjYJzCgIJh0ecWE",
@@ -27,9 +28,13 @@ const firebaseConfig = {
 
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
+const auth = getAuth(fbApp);
 
 // Expose to global scope
 window.fbDb = db;
+window.fbAuth = auth;
+window.fbSignIn = signInWithEmailAndPassword;
+window.fbSignOut = signOut;
 window.fbDoc = doc;
 window.fbGetDoc = getDoc;
 window.fbSetDoc = setDoc;
@@ -220,7 +225,16 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
     </div>
     <button class="btn-login" onclick="doLogin()">BELÉPÉS</button>
     <div class="login-error" id="login-error">Érvénytelen kód vagy e-mail!</div>
-    <div class="admin-link">SZERVEZŐ: <span onclick="tryAdminLogin()">ADMIN PANEL</span></div>
+
+    <!-- Admin belépés -->
+    <div id="admin-login-section" style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;display:none;">
+      <div class="field-group">
+        <label class="field-label">Admin jelszó</label>
+        <input class="field-input" type="password" id="inp-admin-pw" placeholder="••••••••" autocomplete="off" style="font-size:18px;letter-spacing:3px;">
+      </div>
+      <button class="btn-login" style="background:var(--blood2);" onclick="doAdminLogin()">ADMIN BELÉPÉS</button>
+    </div>
+    <div class="admin-link">SZERVEZŐ: <span onclick="toggleAdminSection()">ADMIN PANEL</span></div>
     <div style="margin-top:28px;text-align:center;font-size:10px;letter-spacing:2px;color:rgba(143,168,154,0.35);">© HHTE 2026</div>
   </div>
 </div>
@@ -356,7 +370,7 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
     <button class="nav-btn" onclick="switchAdminTab('settings')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Beállítások
     </button>
-    <button class="nav-btn" onclick="showScreen('s-login')">
+    <button class="nav-btn" onclick="adminLogout()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Kilép
     </button>
   </div>
@@ -478,7 +492,7 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
     <button class="nav-btn active" onclick="switchAdminTab('settings')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Beállítások
     </button>
-    <button class="nav-btn" onclick="showScreen('s-login')">
+    <button class="nav-btn" onclick="adminLogout()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Kilép
     </button>
   </div>
@@ -941,18 +955,47 @@ function startCountdown(){
 }
 
 // ===== ADMIN =====
+function toggleAdminSection(){
+  const sec=document.getElementById('admin-login-section');
+  sec.style.display=sec.style.display==='none'?'block':'none';
+  if(sec.style.display==='block')document.getElementById('inp-admin-pw').focus();
+}
+
 function tryAdminLogin(){
-  const em=document.getElementById('inp-email').value.trim().toLowerCase();
-  const co=document.getElementById('inp-code').value.trim().toUpperCase();
-  document.getElementById('inp-code').value='';
-  if(em===ADMIN.email.toLowerCase()&&co===ADMIN.code){
-    document.getElementById('login-error').style.display='none';
-    goAdmin();
-  } else {
-    const err=document.getElementById('login-error');
-    err.textContent='Admin belépéshez add meg a helyes email és kódot!';
-    err.style.display='block';
+  toggleAdminSection();
+}
+
+async function doAdminLogin(){
+  const email='admin@hazajaro.hu';
+  const pw=document.getElementById('inp-admin-pw').value;
+  document.getElementById('inp-admin-pw').value='';
+  if(!pw){showLoginError('Add meg az admin jelszót!');return;}
+
+  // Wait for Firebase if needed
+  if(!window.fbReady){
+    showLoginError('Firebase betöltés folyamatban, próbáld újra...');return;
   }
+
+  try{
+    showLoginError('Belépés...',false);
+    await window.fbSignIn(window.fbAuth, email, pw);
+    document.getElementById('login-error').style.display='none';
+    document.getElementById('admin-login-section').style.display='none';
+    goAdmin();
+  }catch(e){
+    const msg=e.code==='auth/wrong-password'||e.code==='auth/invalid-credential'
+      ?'Hibás jelszó!'
+      :e.code==='auth/too-many-requests'
+      ?'Túl sok sikertelen próba, várj egy kicsit!'
+      :'Belépési hiba: '+e.code;
+    showLoginError(msg);
+  }
+}
+
+function showLoginError(msg, show=true){
+  const err=document.getElementById('login-error');
+  err.textContent=msg;
+  err.style.display=show?'block':'none';
 }
 
 function goAdmin(){
@@ -960,7 +1003,6 @@ function goAdmin(){
   buildPartList();
   showScreen('s-admin-map');
   initAdminMap();
-  // Fill settings fields
   const sn=document.getElementById('set-app-name');
   if(sn)sn.value=state.appName||'HAZAJÁRÓ\nTÚRÁK';
   const ss=document.getElementById('set-app-sub');
@@ -976,6 +1018,11 @@ function goAdmin(){
   if(cv)cv.checked=state.countdownVisible!==false;
   const rs=document.getElementById('radius-slider');
   if(rs){rs.value=state.checkinRadius;updateRadiusUI(state.checkinRadius);}
+}
+
+function adminLogout(){
+  if(window.fbAuth&&window.fbSignOut)window.fbSignOut(window.fbAuth).catch(()=>{});
+  showScreen('s-login');
 }
 
 function switchAdminTab(tab){

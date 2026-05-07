@@ -1763,7 +1763,32 @@ window.addEventListener('DOMContentLoaded', () => {
   ⚡ OFFLINE MÓD — Térkép csempék cache-ből töltődnek
 </div>
 <script>
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // Ellenőriz új verziót minden megnyitáskor
+    reg.update();
+
+    // Ha új SW vár telepítésre — azonnal aktiválja
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // Új verzió kész — automatikus újratöltés
+          newWorker.postMessage('skipWaiting');
+        }
+      });
+    });
+  }).catch(()=>{});
+
+  // Ha az SW átvette az irányítást — oldal újratöltése
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+}
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();deferredPrompt=e;

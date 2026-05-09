@@ -651,12 +651,9 @@ function doLogin(){
     initUserMap();
     buildCpList();
     startGPS();
-        if(state.startTime&&state.timeLimitMs){
-      startCountdown();
-    }
+    if(state.startTime&&state.timeLimitMs){ startCountdown(); }
+    // iOS fix: késleltetett újrarajzolás ha Firebase még nem töltött be
     setTimeout(()=>{ if(state.map) renderRouteOnUserMap(); }, 2000);
-
-    }
   } else {
     document.getElementById('login-error').style.display='block';
   }
@@ -723,10 +720,17 @@ function initUserMap(){
   const cp0=state.checkpoints[0]||{lat:47.5,lng:19.0};
   state.map=L.map('map',{zoomControl:false,attributionControl:false}).setView([cp0.lat,cp0.lng],14);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(state.map);
+  renderRouteOnUserMap();
+  renderCpMarkersUser();
+}
+
+function renderRouteOnUserMap(){
+  if(!state.map)return;
+  if(state.gpxLayer){state.map.removeLayer(state.gpxLayer);state.gpxLayer=null;}
   if(state.gpxRoute&&state.gpxRoute.length>0){
     state.gpxLayer=L.polyline(state.gpxRoute,{color:'#1a3a6b',weight:4,opacity:0.85}).addTo(state.map);
+    state.map.fitBounds(state.gpxLayer.getBounds(),{padding:[40,40]});
   }
-  renderCpMarkersUser();
 }
 
 function renderCpMarkersUser(){
@@ -1768,6 +1772,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const fbLoaded = await fbLoadConfig();
     if(fbLoaded){
       applyBranding();
+      // Ha a felhasználói térkép már nyitva van, frissítsd az útvonalat
+      if(state.map) renderRouteOnUserMap();
       showSaveToast('✓ KONFIGURÁCIÓ BETÖLTVE');
       return;
     }
@@ -1793,6 +1799,7 @@ window.addEventListener('DOMContentLoaded', () => {
         data.savedAt=remoteSaved||Date.now();
         localStorage.setItem(LS_KEY,JSON.stringify(data));
         applyBranding();
+        if(state.map) renderRouteOnUserMap();
         showSaveToast('✓ KONFIGURÁCIÓ FRISSÍTVE');
       }
     }catch(e){}

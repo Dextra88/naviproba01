@@ -248,13 +248,15 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
 <div id="s-map" class="screen">
   <div class="topbar">
     <span class="topbar-logo" id="map-topbar-logo">HAZAJÁRÓ</span>
-    <span class="topbar-badge" id="map-user-badge">—</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div onclick="centerOnUser()" title="Pozícióm" style="width:34px;height:34px;border-radius:50%;background:rgba(61,74,46,0.6);border:1px solid var(--moss);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7" stroke-dasharray="4 2"/></svg>
+      </div>
+      <span class="topbar-badge" id="map-user-badge">—</span>
+    </div>
   </div>
   <div class="map-container">
     <div id="map"></div>
-    <div class="map-fab" onclick="centerOnUser()" title="Pozícióm">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7" stroke-dasharray="4 2"/></svg>
-    </div>
     <div class="gps-overlay">
       <div class="gps-card">
         <div class="gps-row">
@@ -1551,6 +1553,8 @@ function lsClear(){
 async function fbSaveConfig(){
   if(!window.fbReady)return;
   try{
+    // gpxRoute lehet nagy — külön mentjük hogy ne lépje túl a Firestore 1MB limitet
+    const gpxData=state.gpxRoute?JSON.stringify(state.gpxRoute):null;
     const data={
       checkpoints:state.checkpoints,
       checkinRadius:state.checkinRadius,
@@ -1558,11 +1562,27 @@ async function fbSaveConfig(){
       appName:state.appName,appSub:state.appSub,eventLabel:state.eventLabel,
       timeLimitMs:state.timeLimitMs||null,countdownVisible:state.countdownVisible,
       gpxTotalKm:state.gpxTotalKm||null,
+      gpxRoute:gpxData,
       updatedAt:window.fbServerTimestamp(),
     };
     await window.fbSetDoc(window.fbDoc(window.fbDb,'config','main'),data);
     showSaveToast('✓ FIREBASE MENTVE');
-  }catch(e){console.warn('Firebase save failed:',e);}
+  }catch(e){
+    console.warn('Firebase save failed:',e);
+    // Ha túl nagy a gpxRoute, mentjük nélküle
+    if(e.code==='invalid-argument'){
+      const data={
+        checkpoints:state.checkpoints,
+        checkinRadius:state.checkinRadius,
+        participants:state.participants,
+        appName:state.appName,appSub:state.appSub,eventLabel:state.eventLabel,
+        timeLimitMs:state.timeLimitMs||null,countdownVisible:state.countdownVisible,
+        gpxTotalKm:state.gpxTotalKm||null,
+        updatedAt:window.fbServerTimestamp(),
+      };
+      await window.fbSetDoc(window.fbDoc(window.fbDb,'config','main'),data).catch(()=>{});
+    }
+  }
 }
 
 async function fbLoadConfig(){
@@ -1580,6 +1600,9 @@ async function fbLoadConfig(){
     if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;
     if(data.countdownVisible!=null)state.countdownVisible=data.countdownVisible;
     if(data.gpxTotalKm!=null)state.gpxTotalKm=data.gpxTotalKm;
+    if(data.gpxRoute){
+      try{state.gpxRoute=JSON.parse(data.gpxRoute);}catch(e){state.gpxRoute=data.gpxRoute;}
+    }
     applyBranding();
     return true;
   }catch(e){console.warn('Firebase load failed:',e);return false;}

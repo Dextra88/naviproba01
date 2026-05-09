@@ -651,8 +651,11 @@ function doLogin(){
     initUserMap();
     buildCpList();
     startGPS();
-    if(state.startTime&&state.timeLimitMs){
+        if(state.startTime&&state.timeLimitMs){
       startCountdown();
+    }
+    setTimeout(()=>{ if(state.map) renderRouteOnUserMap(); }, 2000);
+
     }
   } else {
     document.getElementById('login-error').style.display='block';

@@ -613,6 +613,8 @@ function applyBranding(){
   }
 }
 
+const SESSION_KEY = 'hazajaro_session';
+
 // ===== LOGIN =====
 function doLogin(){
   const em=document.getElementById('inp-email').value.trim().toLowerCase();
@@ -623,6 +625,10 @@ function doLogin(){
   if(u){
     state.user=u;
     document.getElementById('login-error').style.display='none';
+    // Email megjegyzése
+    localStorage.setItem('hazajaro_remembered_email', em);
+    // Session mentése
+    saveSession(u);
     const badge=u.name.split(' ').slice(-1)[0].toUpperCase()+' · '+u.code;
     document.getElementById('map-user-badge').textContent=badge;
     document.getElementById('cp-user-badge').textContent=badge;
@@ -654,11 +660,61 @@ function doLogin(){
     buildCpList();
     startGPS();
     if(state.startTime&&state.timeLimitMs){ startCountdown(); }
-    // iOS fix: késleltetett újrarajzolás ha Firebase még nem töltött be
     setTimeout(()=>{ if(state.map) renderRouteOnUserMap(); }, 2000);
   } else {
     document.getElementById('login-error').style.display='block';
   }
+}
+
+function saveSession(user){
+  try{
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      email: user.email,
+      code: user.code,
+      name: user.name,
+      savedAt: Date.now(),
+    }));
+  }catch(e){}
+}
+
+function restoreSession(){
+  try{
+    // Email megjegyzése a belépési mezőbe
+    const remembered=localStorage.getItem('hazajaro_remembered_email');
+    if(remembered) document.getElementById('inp-email').value=remembered;
+
+    // Session visszaállítása ha még él (sessionStorage törlődik ha bezárják a böngészőt teljesen)
+    const raw=sessionStorage.getItem(SESSION_KEY);
+    if(!raw)return false;
+    const session=JSON.parse(raw);
+    // Max 24 óra
+    if(Date.now()-session.savedAt > 24*60*60*1000){ sessionStorage.removeItem(SESSION_KEY); return false; }
+    lsLoad();
+    const u=state.participants.find(p=>p.email.toLowerCase()===session.email.toLowerCase()&&p.code===session.code);
+    if(!u)return false;
+    state.user=u;
+    const badge=u.name.split(' ').slice(-1)[0].toUpperCase()+' · '+u.code;
+    document.getElementById('map-user-badge').textContent=badge;
+    document.getElementById('cp-user-badge').textContent=badge;
+
+    // Haladás visszaállítása
+    const saved=loadTourProgress(session.email);
+    if(saved&&saved.currentCp>0){
+      state.currentCp=saved.currentCp;
+      state.startTime=saved.startTime;
+    } else {
+      state.currentCp=0;
+      state.startTime=null;
+    }
+
+    showScreen('s-map');
+    initUserMap();
+    buildCpList();
+    startGPS();
+    if(state.startTime&&state.timeLimitMs){ startCountdown(); }
+    setTimeout(()=>{ if(state.map) renderRouteOnUserMap(); }, 2000);
+    return true;
+  }catch(e){return false;}
 }
 
 function confirmLogout(){
@@ -670,7 +726,8 @@ function backToLogin(){
   if(state.countdownInterval){clearInterval(state.countdownInterval);state.countdownInterval=null;}
   if(state.map){state.map.remove();state.map=null;}
   state.user=null;state.currentCp=0;state.startTime=null;state.lastLat=null;state.lastLng=null;
-  document.getElementById('inp-email').value='';
+  sessionStorage.removeItem(SESSION_KEY);
+  // Email marad a mezőben a könnyebb újrabelépéshez
   document.getElementById('inp-code').value='';
   showScreen('s-login');
 }
@@ -1782,6 +1839,10 @@ function showSaveToast(msg){
 // Startup
 window.addEventListener('DOMContentLoaded', () => {
   const localLoaded = lsLoad();
+
+  // Session visszaállítása (képernyő zárásnál nem lép ki)
+  const sessionRestored = restoreSession();
+  if(sessionRestored) return; // Ha visszaállt, nem kell tovább tölteni
 
   // Try Firebase first, then config.json fallback
   async function tryRemoteLoad(){

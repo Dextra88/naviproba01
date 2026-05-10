@@ -770,6 +770,18 @@ function T(key, ...args){
   return val || LANGS.hu[key] || key;
 }
 
+function normalizeAppName(name){
+  if(!name) return 'HAZAJÁRÓ\nTÚRÁK';
+  // Ha már van valódi sortörés, ok
+  if(name.includes('\n')) return name;
+  // Ha literális \n van (Firebase-ből jöhet így)
+  if(name.includes('\\n')) return name.replace('\\n', '\n');
+  // Ha szóköz van, az első szóköznél törjük
+  const idx = name.indexOf(' ');
+  if(idx > 0) return name.slice(0, idx) + '\n' + name.slice(idx + 1);
+  return name;
+}
+
 
 // ===== STATE =====
 let state = {
@@ -1835,7 +1847,9 @@ function lsLoad(){
     if(data.gpxElevation!=null)state.gpxElevation=data.gpxElevation;
     if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
     if(data.participants)state.participants=data.participants;
-    if(data.appName)state.appName=data.appName.replace(/ (?=[^ ]*$)/,"\n");
+    if(data.appName)state.appName=normalizeAppName(data.appName);
+");else if(!n.includes("
+"))n=n.replace(/ (?=[^ ]*$)/,"
     if(data.appSub)state.appSub=data.appSub;
     if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
     if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;
@@ -1908,7 +1922,9 @@ async function fbLoadConfig(){
     if(data.checkpoints&&data.checkpoints.length>0)state.checkpoints=data.checkpoints;
     if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
     if(data.participants)state.participants=data.participants;
-    if(data.appName)state.appName=data.appName.replace(/ (?=[^ ]*$)/,"\n");
+    if(data.appName)state.appName=normalizeAppName(data.appName);
+");else if(!n.includes("
+"))n=n.replace(/ (?=[^ ]*$)/,"
     if(data.appSub)state.appSub=data.appSub;
     if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
     if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;
@@ -2243,7 +2259,9 @@ function importConfig(input){
       if(data.gpxElevation!=null)state.gpxElevation=data.gpxElevation;
       if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
       if(data.participants)state.participants=data.participants;
-      if(data.appName)state.appName=data.appName.replace(/ (?=[^ ]*$)/,"\n");
+      if(data.appName)state.appName=normalizeAppName(data.appName);
+");else if(!n.includes("
+"))n=n.replace(/ (?=[^ ]*$)/,"
       if(data.appSub)state.appSub=data.appSub;
       if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
       if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;
@@ -2325,7 +2343,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if(data.gpxTotalKm!=null)state.gpxTotalKm=data.gpxTotalKm;
         if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
         if(data.participants)state.participants=data.participants;
-        if(data.appName)state.appName=data.appName.replace(/ (?=[^ ]*$)/,"\n");
+        if(data.appName)state.appName=normalizeAppName(data.appName);
+");else if(!n.includes("
+"))n=n.replace(/ (?=[^ ]*$)/,"
         if(data.appSub)state.appSub=data.appSub;
         if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
         if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;

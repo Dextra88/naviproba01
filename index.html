@@ -839,24 +839,22 @@ function formatHHMM(ms){
 }
 
 function applyBranding(){
-  const logo=state.appName||'HAZAJÁRÓ\nTÚRÁK';
+  const logo=(state.appName||'HAZAJÁRÓ\nTÚRÁK').trim();
   const logoEl=document.getElementById('login-logo');
   let topbarName='HAZAJÁRÓ';
   if(logoEl){
+    // Mindig két sor: \n-nél törjük, ha nincs akkor első szóköznél
+    let line1, line2;
     if(logo.includes('\n')){
-      const parts=logo.split('\n');
-      logoEl.innerHTML=parts.join('<br>');
-      topbarName=parts[0]||'HAZAJÁRÓ';
+      const p=logo.split('\n');
+      line1=p[0].trim(); line2=p.slice(1).join(' ').trim();
     } else {
       const idx=logo.indexOf(' ');
-      if(idx>0){
-        logoEl.innerHTML=logo.slice(0,idx)+'<br>'+logo.slice(idx+1);
-        topbarName=logo.slice(0,idx);
-      } else {
-        logoEl.innerHTML=logo;
-        topbarName=logo;
-      }
+      if(idx>0){ line1=logo.slice(0,idx); line2=logo.slice(idx+1); }
+      else { line1=logo; line2=''; }
     }
+    logoEl.innerHTML = line2 ? line1+'<br>'+line2 : line1;
+    topbarName = line1;
   }
   const sub=state.appSub||'TÚRA ALKALMAZÁS';
   const subEl=document.getElementById('login-sub');

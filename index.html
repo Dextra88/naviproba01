@@ -216,16 +216,21 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
       <div class="login-logo" id="login-logo">HAZAJÁRÓ<br>TÚRÁK</div>
       <div class="login-sub" id="login-sub">TÚRA ALKALMAZÁS</div>
       <div class="login-event" id="event-display"></div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;">
+        <button onclick="setLang('hu')" id="lang-hu" style="background:var(--moss);border:1px solid var(--moss2);color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:5px 12px;cursor:pointer;">🇭🇺 HU</button>
+        <button onclick="setLang('en')" id="lang-en" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--frost);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:5px 12px;cursor:pointer;">🇬🇧 EN</button>
+        <button onclick="setLang('de')" id="lang-de" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--frost);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:5px 12px;cursor:pointer;">🇩🇪 DE</button>
+      </div>
     </div>
     <div class="field-group">
-      <label class="field-label">E-mail cím</label>
+      <label class="field-label" id="lbl-email">E-mail cím</label>
       <input class="field-input" type="email" id="inp-email" placeholder="nev@pelda.hu" autocomplete="off">
     </div>
     <div class="field-group">
-      <label class="field-label">Regisztrációs kód</label>
+      <label class="field-label" id="lbl-code">Regisztrációs kód</label>
       <input class="field-input" type="password" id="inp-code" maxlength="3" placeholder="_ _ _" style="font-size:28px;text-align:center;letter-spacing:12px;" autocomplete="off">
     </div>
-    <button class="btn-login" onclick="doLogin()">BELÉPÉS</button>
+    <button class="btn-login" id="btn-login" onclick="doLogin()">BELÉPÉS</button>
     <div class="login-error" id="login-error">Érvénytelen kód vagy e-mail!</div>
 
     <!-- Admin belépés -->
@@ -238,7 +243,7 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
     </div>
 
     <div style="margin-top:28px;text-align:center;">
-      <div style="font-size:11px;letter-spacing:2px;color:var(--frost);text-transform:uppercase;">Szervező</div>
+      <div style="font-size:11px;letter-spacing:2px;color:var(--frost);text-transform:uppercase;" id="lbl-organizer">Szervező</div>
       <div style="font-size:12px;letter-spacing:1px;color:var(--mist);margin-top:4px;">Hazajáró Honismereti és Turista Egylet</div>
       <div class="admin-link" style="margin-top:12px;">ADMIN: <span onclick="toggleAdminSection()">BELÉPÉS</span></div>
       <div style="margin-top:16px;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,0.7);">© HHTE 2026</div>
@@ -270,9 +275,9 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
           <div class="dist-label" id="dist-cp-name">következő pont</div>
         </div>
         <div class="threshold-label">Határ: <span id="thresh-label">100</span> m</div>
-        <div class="countdown-bar" id="countdown-bar">⏱ SZINTIDŐ: <span id="countdown-txt">—</span></div>
+        <div class="countdown-bar" id="countdown-bar"><span id="countdown-label">⏱ SZINTIDŐ:</span> <span id="countdown-txt">—</span></div>
         <button class="checkin-btn disabled" id="checkin-btn" onclick="doCheckin()">GPS KERESÉS...</button>
-        <button class="abandon-btn" onclick="abandonTour()">TÚRA FELADÁSA</button>
+        <button class="abandon-btn" id="abandon-btn" onclick="abandonTour()">TÚRA FELADÁSA</button>
       </div>
     </div>
   </div>
@@ -303,7 +308,7 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
         <span id="prog-km-txt">0 km</span>
       </div>
     </div>
-    <div class="section-title">Ellenőrzőpontok</div>
+    <div class="section-title" id="cp-section-title">Ellenőrzőpontok</div>
     <div id="cp-list-scroll"></div>
   </div>
   <div class="bottom-nav">
@@ -327,14 +332,12 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
   <h2 id="success-title">TELJESÍTVE!</h2>
   <p id="success-msg">Gratulálunk, sikeresen befejezted a túrát!</p>
   <div class="finish-stats">
-    <div class="fstat"><div class="fstat-val" id="fin-km">—</div><div class="fstat-lbl">Km</div></div>
-    <div class="fstat"><div class="fstat-val" id="fin-cp">—</div><div class="fstat-lbl">Pont</div></div>
-    <div class="fstat" style="grid-column:span 2;"><div class="fstat-val" id="fin-time">—</div><div class="fstat-lbl">Megtett idő</div></div>
+    <div class="fstat"><div class="fstat-val" id="fin-km">—</div><div class="fstat-lbl" id="fin-km-lbl">Km</div></div>
+    <div class="fstat"><div class="fstat-val" id="fin-cp">—</div><div class="fstat-lbl" id="fin-cp-lbl">Pont</div></div>
+    <div class="fstat" style="grid-column:span 2;"><div class="fstat-val" id="fin-time">—</div><div class="fstat-lbl" id="fin-time-lbl">Megtett idő</div></div>
   </div>
-
-  <!-- Csillagos értékelés — csak sikeres teljesítésnél -->
   <div id="rating-section" style="display:none;margin-top:24px;text-align:center;width:100%;max-width:320px;">
-    <div style="font-size:12px;letter-spacing:3px;color:var(--frost);margin-bottom:10px;">ÉRTÉKELD A TÚRÁT</div>
+    <div style="font-size:12px;letter-spacing:3px;color:var(--frost);margin-bottom:10px;" id="rate-label">ÉRTÉKELD A TÚRÁT</div>
     <div id="star-row" style="display:flex;justify-content:center;gap:10px;">
       <span onclick="rateTour(1)" class="star" style="font-size:36px;cursor:pointer;color:rgba(255,255,255,0.2);transition:color 0.15s;">★</span>
       <span onclick="rateTour(2)" class="star" style="font-size:36px;cursor:pointer;color:rgba(255,255,255,0.2);transition:color 0.15s;">★</span>
@@ -344,9 +347,8 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
     </div>
     <div id="rating-thanks" style="display:none;font-size:13px;letter-spacing:1px;color:#8fc870;margin-top:8px;">Köszönjük az értékelést!</div>
   </div>
-
-  <p style="margin-top:20px;font-size:13px;color:var(--frost);letter-spacing:0.5px;">Köszönjük, várunk szeretettel a következő túránkon is!</p>
-  <button class="btn-back-login" onclick="backToLogin()" style="margin-top:16px;">VISSZA A FŐOLDALRA</button>
+  <p id="farewell-txt" style="margin-top:20px;font-size:13px;color:var(--frost);letter-spacing:0.5px;">Köszönjük, várunk szeretettel a következő túránkon is!</p>
+  <button class="btn-back-login" id="back-btn" onclick="backToLogin()" style="margin-top:16px;">VISSZA A FŐOLDALRA</button>
 </div>
 
 <!-- ADMIN MAP -->
@@ -653,11 +655,7 @@ function doLogin(){
     const saved=loadTourProgress(em);
     if(saved && saved.currentCp > 0){
       const cpName=state.checkpoints[saved.currentCp]?.name||'';
-      const resume=confirm(
-        'Folytatod a megkezdett túrát?\n\n'+
-        'Mentett haladás: '+saved.currentCp+' / '+state.checkpoints.length+' pont\n'+
-        'Következő pont: '+cpName
-      );
+      const resume=confirm(T('resumeConfirm',saved.currentCp,state.checkpoints.length,cpName));
       if(resume){
         state.currentCp=saved.currentCp;
         state.startTime=saved.startTime;
@@ -734,7 +732,7 @@ function restoreSession(){
 }
 
 function confirmLogout(){
-  if(confirm('Biztosan kilépsz?')) backToLogin();
+  if(confirm(T('logoutConfirm'))) backToLogin();
 }
 
 function backToLogin(){
@@ -783,7 +781,7 @@ function clearTourProgress(){
 }
 
 function abandonTour(){
-  if(!confirm('Biztosan feladod a túrát?')) return;
+  if(!confirm(T('abandonConfirm'))) return;
   clearTourProgress();
   finishTour(true);
 }
@@ -903,13 +901,13 @@ function switchTab(tab){
 // ===== GPS =====
 function startGPS(){
   state.gpsReady=false;
-  updateCheckinBtn('disabled','GPS KERESÉS...');
+  updateCheckinBtn('disabled',T('checkinGpsSearch'));
   document.getElementById('gps-dot').className='gps-dot searching';
-  document.getElementById('gps-text').textContent='GPS helyzet keresése...';
+  document.getElementById('gps-text').textContent=T('gpsSearching');
   document.getElementById('dist-val').textContent='— m';
   if(!navigator.geolocation){
-    document.getElementById('gps-text').textContent='GPS nem elérhető';
-    updateCheckinBtn('disabled','GPS NEM ELÉRHETŐ');
+    document.getElementById('gps-text').textContent=T('gpsError');
+    updateCheckinBtn('disabled',T('checkinGpsNo'));
     return;
   }
   if(state.gpsWatchId){navigator.geolocation.clearWatch(state.gpsWatchId);}
@@ -923,8 +921,8 @@ function startGPS(){
     updateDistanceUI(dist);
   },err=>{
     document.getElementById('gps-dot').className='gps-dot far';
-    document.getElementById('gps-text').textContent='GPS hiba: '+(err.code===1?'Engedély megtagadva':'Nem sikerült');
-    updateCheckinBtn('disabled','GPS HIBA');
+    document.getElementById('gps-text').textContent=T('gpsError')+': '+(err.code===1?T('gpsNoPermission'):T('gpsError'));
+    updateCheckinBtn('disabled',T('checkinGpsError'));
   },{enableHighAccuracy:true,maximumAge:4000,timeout:15000});
 }
 
@@ -942,19 +940,19 @@ function updateDistanceUI(dist){
   if(inRange){
     const cp=state.checkpoints[state.currentCp];
     if(!isCpOpen(cp)){
-      updateCheckinBtn('disabled','PONT ZÁRVA — '+(cp.openFrom||'?')+' – '+(cp.openTo||'?'));
+      updateCheckinBtn('disabled',T('checkinClosed',cp.openFrom||'?',cp.openTo||'?'));
       document.getElementById('gps-dot').className='gps-dot far';
-      document.getElementById('gps-text').textContent='A pont jelenleg zárva';
+      document.getElementById('gps-text').textContent=T('closedLabel');
       state.gpsReady=false;return;
     }
     state.gpsReady=true;
     document.getElementById('gps-dot').className='gps-dot';
-    document.getElementById('gps-text').textContent='GPS aktív — A PONTON BELÜL';
-    updateCheckinBtn('ready',state.currentCp===0?'RAJT BEJELENTKEZÉS':state.checkpoints[state.currentCp].name.toUpperCase());
+    document.getElementById('gps-text').textContent=T('gpsInRange');
+    updateCheckinBtn('ready',state.currentCp===0?T('checkinStart'):T('checkinBtn',state.checkpoints[state.currentCp].name.toUpperCase()));
   } else {
     state.gpsReady=false;
-    document.getElementById('gps-text').textContent='GPS aktív — '+Math.round(dist)+' m a ponttól';
-    updateCheckinBtn('disabled','MÉG '+Math.round(dist-state.checkinRadius)+' M — KÖZELEDJ');
+    document.getElementById('gps-text').textContent=T('gpsFar',Math.round(dist));
+    updateCheckinBtn('disabled',T('distLabel',Math.round(dist-state.checkinRadius)));
   }
 }
 
@@ -974,7 +972,7 @@ function doCheckin(){
     state.startTime=Date.now();
   }
   state.gpsReady=false;
-  updateCheckinBtn('success','✓ BEJELENTKEZVE');
+  updateCheckinBtn('success',T('checkinDone'));
   setTimeout(()=>{
     state.currentCp++;
     saveTourProgress();
@@ -988,7 +986,7 @@ function doCheckin(){
     buildCpList();
     const nextCp=state.checkpoints[state.currentCp];
     if(state.map&&nextCp)state.map.panTo([nextCp.lat,nextCp.lng]);
-    updateCheckinBtn('disabled','KÖVETKEZŐ PONT FELÉ...');
+    updateCheckinBtn('disabled',T('nextPoint'));
   },1200);
 }
 
@@ -1019,23 +1017,27 @@ function finishTour(abandoned){
   if(success){
     icon.className='success-icon ok';
     icon.innerHTML='<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
-    title.textContent='SIKERES TELJESÍTÉS!';
-    msg.textContent='Gratulálunk, sikeresen befejezted a túrát!';
+    title.textContent=T('successTitle');
+    msg.textContent=T('successMsg');
   } else if(abandoned){
     icon.className='success-icon fail';
     icon.innerHTML='<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-    title.textContent='TÚRA FELADVA';
-    msg.textContent='A túrát feladtad. '+(doneCps)+'/'+totalCps+' ellenőrzőponton voltál bejelentkezve.';
+    title.textContent=T('abandonTitle');
+    msg.textContent=T('abandonMsg',doneCps,totalCps);
   } else {
     icon.className='success-icon fail';
     icon.innerHTML='<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-    title.textContent='SIKERTELEN TELJESÍTÉS';
+    title.textContent=T('failTitle');
     const missing=totalCps-doneCps;
     let reason=[];
-    if(missing>0)reason.push('kihagytál '+missing+' ellenőrzőpontot');
-    if(!inTime)reason.push('kicsúsztál a szintidőből');
-    msg.textContent='Sajnáljuk, '+(reason.join(' és '))+'. Legközelebb sikerülni fog!';
+    if(missing>0)reason.push(T('missing',missing));
+    if(!inTime)reason.push(T('overtime'));
+    msg.textContent=T('failMsg',reason.join(' és '));
   }
+  // Update static labels
+  applyLang();
+  const rt=document.getElementById('rating-thanks');
+  if(rt)rt.textContent=T('rateThanks');
 
   document.getElementById('fin-km').textContent=state.gpxTotalKm?state.gpxTotalKm+' km':'—';
   document.getElementById('fin-cp').textContent=doneCps+'/'+totalCps;
@@ -1070,7 +1072,7 @@ function startCountdown(){
     const remaining=state.timeLimitMs-elapsed;
     const txt=document.getElementById('countdown-txt');
     if(remaining<=0){
-      txt.textContent='LEJÁRT!';
+      txt.textContent=T('countdownExpired');
       bar.style.color='#e07070';
       clearInterval(state.countdownInterval);
     } else {
@@ -2034,9 +2036,231 @@ function showSaveToast(msg){
   t._to=setTimeout(()=>t.style.opacity='0',2000);
 }
 
-// Startup
+// ===== TRANSLATIONS =====
+const LANGS = {
+  hu: {
+    emailLabel: 'E-mail cím',
+    codeLabel: 'Regisztrációs kód',
+    loginBtn: 'BELÉPÉS',
+    loginError: 'Érvénytelen kód vagy e-mail!',
+    organizer: 'Szervező',
+    gpsSearching: 'GPS helyzet keresése...',
+    gpsActive: 'GPS aktív',
+    gpsInRange: 'GPS aktív — A PONTON BELÜL',
+    gpsFar: m => 'GPS aktív — '+m+' m a ponttól',
+    gpsError: 'GPS hiba',
+    gpsNoPermission: 'Engedély megtagadva',
+    distLabel: m => 'MÉG '+m+' M — KÖZELEDJ',
+    threshold: 'Határ',
+    checkinStart: 'RAJT BEJELENTKEZÉS',
+    checkinBtn: name => name,
+    checkinDone: '✓ BEJELENTKEZVE',
+    checkinGpsSearch: 'GPS KERESÉS...',
+    checkinGpsError: 'GPS HIBA',
+    checkinGpsNo: 'GPS NEM ELÉRHETŐ',
+    checkinClosed: (f,t) => 'PONT ZÁRVA — '+f+' – '+t,
+    closedLabel: 'A pont jelenleg zárva',
+    nextPoint: 'KÖVETKEZŐ PONT FELÉ...',
+    countdown: 'SZINTIDŐ',
+    countdownExpired: 'LEJÁRT!',
+    abandonBtn: 'TÚRA FELADÁSA',
+    abandonConfirm: T('abandonConfirm'),
+    logoutConfirm: T('logoutConfirm'),
+    resumeConfirm: (cur,total,name) => 'Folytatod a megkezdett túrát?\n\nMentett haladás: '+cur+' / '+total+' pont\nKövetkező pont: '+name,
+    mapTab: 'Térkép',
+    cpTab: 'Pontok',
+    logoutTab: 'Kilép',
+    cpSection: 'Ellenőrzőpontok',
+    successTitle: 'SIKERES TELJESÍTÉS!',
+    successMsg: 'Gratulálunk, sikeresen befejezted a túrát!',
+    failTitle: 'SIKERTELEN TELJESÍTÉS',
+    failMsg: (r) => 'Sajnáljuk, '+r+'. Legközelebb sikerülni fog!',
+    abandonTitle: 'TÚRA FELADVA',
+    abandonMsg: (done,total) => 'A túrát feladtad. '+done+'/'+total+' ellenőrzőponton voltál bejelentkezve.',
+    rateLabel: 'ÉRTÉKELD A TÚRÁT',
+    rateThanks: 'Köszönjük az értékelést!',
+    farewell: 'Köszönjük, várunk szeretettel a következő túránkon is!',
+    backBtn: 'VISSZA A FŐOLDALRA',
+    kmLabel: 'Km',
+    cpLabel: 'Pont',
+    timeLabel: 'Megtett idő',
+    offline: '⚡ OFFLINE MÓD — Térkép csempék cache-ből töltődnek',
+    missing: (n) => 'kihagytál '+n+' ellenőrzőpontot',
+    overtime: 'kicsúsztál a szintidőből',
+  },
+  en: {
+    emailLabel: 'E-mail address',
+    codeLabel: 'Registration code',
+    loginBtn: 'LOGIN',
+    loginError: 'Invalid code or e-mail!',
+    organizer: 'Organizer',
+    gpsSearching: 'Searching for GPS...',
+    gpsActive: 'GPS active',
+    gpsInRange: 'GPS active — AT THE CHECKPOINT',
+    gpsFar: m => 'GPS active — '+m+' m from checkpoint',
+    gpsError: 'GPS error',
+    gpsNoPermission: 'Permission denied',
+    distLabel: m => 'STILL '+m+' M AWAY',
+    threshold: 'Radius',
+    checkinStart: 'START CHECK-IN',
+    checkinBtn: name => name,
+    checkinDone: '✓ CHECKED IN',
+    checkinGpsSearch: 'SEARCHING GPS...',
+    checkinGpsError: 'GPS ERROR',
+    checkinGpsNo: 'GPS UNAVAILABLE',
+    checkinClosed: (f,t) => 'CHECKPOINT CLOSED — '+f+' – '+t,
+    closedLabel: 'Checkpoint is currently closed',
+    nextPoint: 'HEADING TO NEXT CHECKPOINT...',
+    countdown: 'TIME LIMIT',
+    countdownExpired: 'EXPIRED!',
+    abandonBtn: 'ABANDON HIKE',
+    abandonConfirm: 'Are you sure you want to abandon the hike?',
+    logoutConfirm: 'Are you sure you want to log out?',
+    resumeConfirm: (cur,total,name) => 'Continue your hike?\n\nSaved progress: '+cur+' / '+total+' checkpoints\nNext: '+name,
+    mapTab: 'Map',
+    cpTab: 'Checkpoints',
+    logoutTab: 'Logout',
+    cpSection: 'Checkpoints',
+    successTitle: 'COMPLETED!',
+    successMsg: 'Congratulations, you successfully completed the hike!',
+    failTitle: 'UNSUCCESSFUL',
+    failMsg: (r) => 'Unfortunately, '+r+'. Better luck next time!',
+    abandonTitle: 'HIKE ABANDONED',
+    abandonMsg: (done,total) => 'You abandoned the hike. Checked in at '+done+'/'+total+' checkpoints.',
+    rateLabel: 'RATE THE HIKE',
+    rateThanks: 'Thank you for your rating!',
+    farewell: 'Thank you, we look forward to seeing you on the next hike!',
+    backBtn: 'BACK TO HOME',
+    kmLabel: 'Km',
+    cpLabel: 'Points',
+    timeLabel: 'Elapsed time',
+    offline: '⚡ OFFLINE MODE — Map tiles loaded from cache',
+    missing: (n) => 'missed '+n+' checkpoint'+(n>1?'s':''),
+    overtime: 'exceeded the time limit',
+  },
+  de: {
+    emailLabel: 'E-Mail-Adresse',
+    codeLabel: 'Registrierungscode',
+    loginBtn: 'ANMELDEN',
+    loginError: 'Ungültiger Code oder E-Mail!',
+    organizer: 'Veranstalter',
+    gpsSearching: 'GPS-Suche...',
+    gpsActive: 'GPS aktiv',
+    gpsInRange: 'GPS aktiv — AM KONTROLLPUNKT',
+    gpsFar: m => 'GPS aktiv — '+m+' m zum Kontrollpunkt',
+    gpsError: 'GPS-Fehler',
+    gpsNoPermission: 'Berechtigung verweigert',
+    distLabel: m => 'NOCH '+m+' M — NÄHERN',
+    threshold: 'Radius',
+    checkinStart: 'START EINSTEMPELN',
+    checkinBtn: name => name,
+    checkinDone: '✓ EINGESTEMPELT',
+    checkinGpsSearch: 'GPS SUCHE...',
+    checkinGpsError: 'GPS FEHLER',
+    checkinGpsNo: 'GPS NICHT VERFÜGBAR',
+    checkinClosed: (f,t) => 'KONTROLLPUNKT GESCHLOSSEN — '+f+' – '+t,
+    closedLabel: 'Kontrollpunkt ist derzeit geschlossen',
+    nextPoint: 'ZUM NÄCHSTEN KONTROLLPUNKT...',
+    countdown: 'ZEITLIMIT',
+    countdownExpired: 'ABGELAUFEN!',
+    abandonBtn: 'WANDERUNG ABBRECHEN',
+    abandonConfirm: 'Wanderung wirklich abbrechen?',
+    logoutConfirm: 'Wirklich abmelden?',
+    resumeConfirm: (cur,total,name) => 'Wanderung fortsetzen?\n\nGespeicherter Fortschritt: '+cur+' / '+total+' Kontrollpunkte\nNächster: '+name,
+    mapTab: 'Karte',
+    cpTab: 'Kontrollpunkte',
+    logoutTab: 'Abmelden',
+    cpSection: 'Kontrollpunkte',
+    successTitle: 'ERFOLGREICH!',
+    successMsg: 'Herzlichen Glückwunsch, du hast die Wanderung erfolgreich abgeschlossen!',
+    failTitle: 'NICHT ERFOLGREICH',
+    failMsg: (r) => 'Leider '+r+'. Viel Erfolg beim nächsten Mal!',
+    abandonTitle: 'WANDERUNG ABGEBROCHEN',
+    abandonMsg: (done,total) => 'Die Wanderung wurde abgebrochen. Eingestempelt bei '+done+'/'+total+' Kontrollpunkten.',
+    rateLabel: 'WANDERUNG BEWERTEN',
+    rateThanks: 'Vielen Dank für Ihre Bewertung!',
+    farewell: 'Danke, wir freuen uns auf die nächste Wanderung mit Ihnen!',
+    backBtn: 'ZURÜCK ZUR STARTSEITE',
+    kmLabel: 'Km',
+    cpLabel: 'Punkte',
+    timeLabel: 'Benötigte Zeit',
+    offline: '⚡ OFFLINE-MODUS — Kartenkacheln aus dem Cache',
+    missing: (n) => n+' Kontrollpunkt'+(n>1?'e':'')+' ausgelassen',
+    overtime: 'Zeitlimit überschritten',
+  },
+};
+
+let currentLang = 'hu';
+
+function setLang(lang){
+  currentLang = lang;
+  localStorage.setItem('hazajaro_lang', lang);
+  // Update lang buttons
+  ['hu','en','de'].forEach(l=>{
+    const btn=document.getElementById('lang-'+l);
+    if(!btn)return;
+    btn.style.background = l===lang ? 'var(--moss)' : 'transparent';
+    btn.style.borderColor = l===lang ? 'var(--moss2)' : 'rgba(255,255,255,0.15)';
+    btn.style.color = l===lang ? 'var(--snow)' : 'var(--frost)';
+  });
+  applyLang();
+}
+
+function applyLang(){
+  const t = LANGS[currentLang] || LANGS.hu;
+  // Login
+  const lblEmail=document.getElementById('lbl-email'); if(lblEmail)lblEmail.textContent=t.emailLabel;
+  const lblCode=document.getElementById('lbl-code'); if(lblCode)lblCode.textContent=t.codeLabel;
+  const btnLogin=document.getElementById('btn-login'); if(btnLogin)btnLogin.textContent=t.loginBtn;
+  const lblOrg=document.getElementById('lbl-organizer'); if(lblOrg)lblOrg.textContent=t.organizer;
+  // Map nav tabs
+  ['nav-map','nav-map2'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.lastChild.textContent=t.mapTab;
+  });
+  ['nav-cp','nav-cp2'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.lastChild.textContent=t.cpTab;
+  });
+  // CP section title
+  const cpSec=document.getElementById('cp-section-title');
+  if(cpSec)cpSec.textContent=t.cpSection;
+  // Abandon btn
+  const ab=document.getElementById('abandon-btn');
+  if(ab)ab.textContent=t.abandonBtn;
+  // Countdown label
+  const cdl=document.getElementById('countdown-label');
+  if(cdl)cdl.textContent=t.countdown+':';
+  // Farewell
+  const fw=document.getElementById('farewell-txt');
+  if(fw)fw.textContent=t.farewell;
+  // Back btn
+  const bb=document.getElementById('back-btn');
+  if(bb)bb.textContent=t.backBtn;
+  // Stat labels
+  const fkm=document.getElementById('fin-km-lbl'); if(fkm)fkm.textContent=t.kmLabel;
+  const fcp=document.getElementById('fin-cp-lbl'); if(fcp)fcp.textContent=t.cpLabel;
+  const ftm=document.getElementById('fin-time-lbl'); if(ftm)ftm.textContent=t.timeLabel;
+  // Rate label
+  const rl=document.getElementById('rate-label'); if(rl)rl.textContent=t.rateLabel;
+  // Threshold label
+  document.getElementById('thresh-label') && (document.getElementById('thresh-label').parentElement.firstChild.textContent=t.threshold+': ');
+  // Offline banner
+  const ob=document.getElementById('offline-banner'); if(ob)ob.textContent=t.offline;
+}
+
+function T(key, ...args){
+  const t = LANGS[currentLang] || LANGS.hu;
+  const val = t[key];
+  if(typeof val === 'function') return val(...args);
+  return val || LANGS.hu[key] || key;
+}
 window.addEventListener('DOMContentLoaded', () => {
   const localLoaded = lsLoad();
+
+  // Load saved language
+  const savedLang = localStorage.getItem('hazajaro_lang') || 'hu';
+  setLang(savedLang);
 
   // Session visszaállítása (képernyő zárásnál nem lép ki)
   const sessionRestored = restoreSession();

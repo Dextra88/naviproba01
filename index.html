@@ -1835,7 +1835,7 @@ function lsLoad(){
     if(data.gpxElevation!=null)state.gpxElevation=data.gpxElevation;
     if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
     if(data.participants)state.participants=data.participants;
-    if(data.appName)state.appName=data.appName;
+    if(data.appName)state.appName=data.appName.replace(/ (?=[^ ]*$)/,"\n");
     if(data.appSub)state.appSub=data.appSub;
     if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
     if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;
@@ -1908,7 +1908,7 @@ async function fbLoadConfig(){
     if(data.checkpoints&&data.checkpoints.length>0)state.checkpoints=data.checkpoints;
     if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
     if(data.participants)state.participants=data.participants;
-    if(data.appName)state.appName=data.appName;
+    if(data.appName)state.appName=data.appName.replace(/ (?=[^ ]*$)/,"\n");
     if(data.appSub)state.appSub=data.appSub;
     if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
     if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;
@@ -2243,7 +2243,7 @@ function importConfig(input){
       if(data.gpxElevation!=null)state.gpxElevation=data.gpxElevation;
       if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
       if(data.participants)state.participants=data.participants;
-      if(data.appName)state.appName=data.appName;
+      if(data.appName)state.appName=data.appName.replace(/ (?=[^ ]*$)/,"\n");
       if(data.appSub)state.appSub=data.appSub;
       if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
       if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;
@@ -2325,7 +2325,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(data.gpxTotalKm!=null)state.gpxTotalKm=data.gpxTotalKm;
         if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
         if(data.participants)state.participants=data.participants;
-        if(data.appName)state.appName=data.appName;
+        if(data.appName)state.appName=data.appName.replace(/ (?=[^ ]*$)/,"\n");
         if(data.appSub)state.appSub=data.appSub;
         if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
         if(data.timeLimitMs!=null)state.timeLimitMs=data.timeLimitMs;

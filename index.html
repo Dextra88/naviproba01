@@ -1457,8 +1457,11 @@ function refreshAdminCpList(){
   const count=document.getElementById('admin-cp-count');
   count.textContent=state.checkpoints.length+' pont';
   if(state.checkpoints.length===0){rows.innerHTML='<div class="no-cp-hint">Kattints a térképre pont hozzáadásához.</div>';return;}
-  rows.innerHTML=state.checkpoints.map((cp,i)=>`
-    <div class="admin-cp-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+  rows.innerHTML=state.checkpoints.map((cp,i)=>{
+    const hasFrom=!!(cp.openFrom);
+    const hasTo=!!(cp.openTo);
+    const active=hasFrom||hasTo;
+    return `<div class="admin-cp-row" style="flex-direction:column;align-items:stretch;gap:4px;">
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="admin-cp-num">${i===0?'R':i===state.checkpoints.length-1?'C':i}</div>
         <div style="flex:1;">
@@ -1468,76 +1471,65 @@ function refreshAdminCpList(){
         <button class="admin-cp-del" onclick="deleteCp(${i})">✕</button>
       </div>
       <div style="background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.05);padding:6px 8px;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          <span style="font-size:11px;color:var(--frost);min-width:38px;">NYIT:</span>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;">
+          <span style="font-size:11px;color:var(--frost);width:38px;">NYIT:</span>
           <input type="datetime-local" id="cpfrom_${i}" value="${cp.openFrom||''}"
             style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:2px;color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:13px;padding:4px 6px;outline:none;min-width:0;"
-            onchange="cpTimeChange(${i},'openFrom',this.value)">
-          <button onclick="clearCpTime(${i},'openFrom')" style="background:rgba(122,30,30,0.4);border:1px solid var(--blood);color:#e07070;font-size:12px;cursor:pointer;padding:3px 7px;border-radius:2px;flex-shrink:0;">✕</button>
+            onchange="saveCpTime(${i},'openFrom',this.value)">
+          <button onclick="saveCpTime(${i},'openFrom',document.getElementById('cpfrom_${i}').value)"
+            style="background:rgba(61,74,46,0.6);border:1px solid var(--moss2);color:#8fc870;font-size:13px;cursor:pointer;padding:3px 8px;border-radius:2px;flex-shrink:0;" title="Mentés">✓</button>
+          <button onclick="clearCpTimeField(${i},'openFrom')"
+            style="background:rgba(122,30,30,0.4);border:1px solid var(--blood);color:#e07070;font-size:13px;cursor:pointer;padding:3px 7px;border-radius:2px;flex-shrink:0;" title="Törlés">✕</button>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8fa89a" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          <span style="font-size:11px;color:var(--frost);min-width:38px;">ZÁRÁS:</span>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:11px;color:var(--frost);width:38px;">ZÁRÁS:</span>
           <input type="datetime-local" id="cpto_${i}" value="${cp.openTo||''}"
             style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:2px;color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:13px;padding:4px 6px;outline:none;min-width:0;"
-            onchange="cpTimeChange(${i},'openTo',this.value)">
-          <button onclick="clearCpTime(${i},'openTo')" style="background:rgba(122,30,30,0.4);border:1px solid var(--blood);color:#e07070;font-size:12px;cursor:pointer;padding:3px 7px;border-radius:2px;flex-shrink:0;">✕</button>
+            onchange="saveCpTime(${i},'openTo',this.value)">
+          <button onclick="saveCpTime(${i},'openTo',document.getElementById('cpto_${i}').value)"
+            style="background:rgba(61,74,46,0.6);border:1px solid var(--moss2);color:#8fc870;font-size:13px;cursor:pointer;padding:3px 8px;border-radius:2px;flex-shrink:0;" title="Mentés">✓</button>
+          <button onclick="clearCpTimeField(${i},'openTo')"
+            style="background:rgba(122,30,30,0.4);border:1px solid var(--blood);color:#e07070;font-size:13px;cursor:pointer;padding:3px 7px;border-radius:2px;flex-shrink:0;" title="Törlés">✕</button>
         </div>
-        <div style="margin-top:5px;font-size:10px;letter-spacing:1px;color:${cp.openFrom||cp.openTo?'#8fc870':'var(--frost)'};">${cp.openFrom||cp.openTo?'⏰ IDŐKORLÁT AKTÍV':'⏰ MINDIG NYITVA'}</div>
+        <div id="cplabel_${i}" style="margin-top:5px;font-size:10px;letter-spacing:1px;color:${active?'#8fc870':'var(--frost)'};">${active?'⏰ IDŐKORLÁT AKTÍV':'⏰ MINDIG NYITVA'}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function renameCp(i,name){if(state.checkpoints[i])state.checkpoints[i].name=name;}
 
-function cpTimeChange(i,field,val){
+function saveCpTime(i,field,val){
   if(!state.checkpoints[i])return;
   state.checkpoints[i][field]=val||'';
-  // Just update the status label without re-rendering the whole list
-  const cp=state.checkpoints[i];
-  const rows=document.getElementById('admin-cp-rows');
-  if(!rows)return;
-  const allRows=rows.querySelectorAll('.admin-cp-row');
-  if(allRows[i]){
-    const lbl=allRows[i].querySelector('div[style*="MINDIG"], div[style*="AKTÍV"]');
-    if(lbl){
-      const active=cp.openFrom||cp.openTo;
-      lbl.textContent=active?'⏰ IDŐKORLÁT AKTÍV':'⏰ MINDIG NYITVA';
-      lbl.style.color=active?'#8fc870':'var(--frost)';
-    }
-  }
+  updateCpLabel(i);
   lsSave();
 }
 
-function clearCpTime(i,field){
+function clearCpTimeField(i,field){
   if(!state.checkpoints[i])return;
   state.checkpoints[i][field]='';
-  // Clear the input visually
-  const idMap={'openFrom':'cpfrom_'+i,'openTo':'cpto_'+i};
+  const idMap={openFrom:'cpfrom_'+i,openTo:'cpto_'+i};
   const inp=document.getElementById(idMap[field]);
   if(inp)inp.value='';
-  // Update status label
-  const cp=state.checkpoints[i];
-  const rows=document.getElementById('admin-cp-rows');
-  if(rows){
-    const allRows=rows.querySelectorAll('.admin-cp-row');
-    if(allRows[i]){
-      const divs=allRows[i].querySelectorAll('div');
-      divs.forEach(d=>{
-        if(d.textContent.includes('IDŐKORLÁT')||d.textContent.includes('MINDIG')){
-          const active=cp.openFrom||cp.openTo;
-          d.textContent=active?'⏰ IDŐKORLÁT AKTÍV':'⏰ MINDIG NYITVA';
-          d.style.color=active?'#8fc870':'var(--frost)';
-        }
-      });
-    }
-  }
+  updateCpLabel(i);
   lsSave();
 }
 
+function updateCpLabel(i){
+  const cp=state.checkpoints[i];
+  const lbl=document.getElementById('cplabel_'+i);
+  if(!lbl)return;
+  const active=cp.openFrom||cp.openTo;
+  lbl.textContent=active?'⏰ IDŐKORLÁT AKTÍV':'⏰ MINDIG NYITVA';
+  lbl.style.color=active?'#8fc870':'var(--frost)';
+}
+
+function cpTimeChange(i,field,val){saveCpTime(i,field,val);}
+function clearCpTime(i,field){clearCpTimeField(i,field);}
+
 function setCpTime(i,field,val){
-  cpTimeChange(i,field,val);
+  saveCpTime(i,field,val);
 }
 
 function deleteCp(i){

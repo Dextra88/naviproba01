@@ -842,7 +842,16 @@ function applyBranding(){
   const logo=state.appName||'HAZAJÁRÓ\nTÚRÁK';
   const parts=logo.split('\n');
   const logoEl=document.getElementById('login-logo');
-  if(logoEl)logoEl.innerHTML=parts.join('<br>');
+  if(logoEl){
+    if(parts.length>=2){
+      logoEl.innerHTML=parts[0]+'<br>'+parts.slice(1).join(' ');
+    } else {
+      // Ha nincs \n, próbáljuk szóközönél törni
+      const words=parts[0].split(' ');
+      const mid=Math.ceil(words.length/2);
+      logoEl.innerHTML=words.slice(0,mid).join(' ')+'<br>'+words.slice(mid).join(' ');
+    }
+  }
   const sub=state.appSub||'TÚRA ALKALMAZÁS';
   const subEl=document.getElementById('login-sub');
   if(subEl)subEl.textContent=sub;

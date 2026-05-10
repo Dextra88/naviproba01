@@ -546,6 +546,231 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
 const ADMIN = {email:'admin@hazajaro.hu', code:'ADM'};
 const LS_KEY = 'hazajaro_config_v2';
 
+// ===== TRANSLATIONS =====
+const LANGS = {
+  hu: {
+    emailLabel: 'E-mail cím',
+    codeLabel: 'Regisztrációs kód',
+    loginBtn: 'BELÉPÉS',
+    loginError: 'Érvénytelen kód vagy e-mail!',
+    organizer: 'Szervező',
+    gpsSearching: 'GPS helyzet keresése...',
+    gpsActive: 'GPS aktív',
+    gpsInRange: 'GPS aktív — A PONTON BELÜL',
+    gpsFar: m => 'GPS aktív — '+m+' m a ponttól',
+    gpsError: 'GPS hiba',
+    gpsNoPermission: 'Engedély megtagadva',
+    distLabel: m => 'MÉG '+m+' M — KÖZELEDJ',
+    threshold: 'Határ',
+    checkinStart: 'RAJT BEJELENTKEZÉS',
+    checkinBtn: name => name,
+    checkinDone: '✓ BEJELENTKEZVE',
+    checkinGpsSearch: 'GPS KERESÉS...',
+    checkinGpsError: 'GPS HIBA',
+    checkinGpsNo: 'GPS NEM ELÉRHETŐ',
+    checkinClosed: (f,t) => 'PONT ZÁRVA — '+f+' – '+t,
+    closedLabel: 'A pont jelenleg zárva',
+    nextPoint: 'KÖVETKEZŐ PONT FELÉ...',
+    countdown: 'SZINTIDŐ',
+    countdownExpired: 'LEJÁRT!',
+    abandonBtn: 'TÚRA FELADÁSA',
+    abandonConfirm: 'Biztosan feladod a túrát?',
+    logoutConfirm: 'Biztosan kilépsz?',
+    resumeConfirm: (cur,total,name) => 'Folytatod a megkezdett túrát?\n\nMentett haladás: '+cur+' / '+total+' pont\nKövetkező pont: '+name,
+    mapTab: 'Térkép',
+    cpTab: 'Pontok',
+    logoutTab: 'Kilép',
+    cpSection: 'Ellenőrzőpontok',
+    successTitle: 'SIKERES TELJESÍTÉS!',
+    successMsg: 'Gratulálunk, sikeresen befejezted a túrát!',
+    failTitle: 'SIKERTELEN TELJESÍTÉS',
+    failMsg: (r) => 'Sajnáljuk, '+r+'. Legközelebb sikerülni fog!',
+    abandonTitle: 'TÚRA FELADVA',
+    abandonMsg: (done,total) => 'A túrát feladtad. '+done+'/'+total+' ellenőrzőponton voltál bejelentkezve.',
+    rateLabel: 'ÉRTÉKELD A TÚRÁT',
+    rateThanks: 'Köszönjük az értékelést!',
+    farewell: 'Köszönjük, várunk szeretettel a következő túránkon is!',
+    backBtn: 'VISSZA A FŐOLDALRA',
+    kmLabel: 'Km',
+    cpLabel: 'Pont',
+    timeLabel: 'Megtett idő',
+    offline: '⚡ OFFLINE MÓD — Térkép csempék cache-ből töltődnek',
+    missing: (n) => 'kihagytál '+n+' ellenőrzőpontot',
+    overtime: 'kicsúsztál a szintidőből',
+  },
+  en: {
+    emailLabel: 'E-mail address',
+    codeLabel: 'Registration code',
+    loginBtn: 'LOGIN',
+    loginError: 'Invalid code or e-mail!',
+    organizer: 'Organizer',
+    gpsSearching: 'Searching for GPS...',
+    gpsActive: 'GPS active',
+    gpsInRange: 'GPS active — AT THE CHECKPOINT',
+    gpsFar: m => 'GPS active — '+m+' m from checkpoint',
+    gpsError: 'GPS error',
+    gpsNoPermission: 'Permission denied',
+    distLabel: m => 'STILL '+m+' M AWAY',
+    threshold: 'Radius',
+    checkinStart: 'START CHECK-IN',
+    checkinBtn: name => name,
+    checkinDone: '✓ CHECKED IN',
+    checkinGpsSearch: 'SEARCHING GPS...',
+    checkinGpsError: 'GPS ERROR',
+    checkinGpsNo: 'GPS UNAVAILABLE',
+    checkinClosed: (f,t) => 'CHECKPOINT CLOSED — '+f+' – '+t,
+    closedLabel: 'Checkpoint is currently closed',
+    nextPoint: 'HEADING TO NEXT CHECKPOINT...',
+    countdown: 'TIME LIMIT',
+    countdownExpired: 'EXPIRED!',
+    abandonBtn: 'ABANDON HIKE',
+    abandonConfirm: 'Are you sure you want to abandon the hike?',
+    logoutConfirm: 'Are you sure you want to log out?',
+    resumeConfirm: (cur,total,name) => 'Continue your hike?\n\nSaved progress: '+cur+' / '+total+' checkpoints\nNext: '+name,
+    mapTab: 'Map',
+    cpTab: 'Checkpoints',
+    logoutTab: 'Logout',
+    cpSection: 'Checkpoints',
+    successTitle: 'COMPLETED!',
+    successMsg: 'Congratulations, you successfully completed the hike!',
+    failTitle: 'UNSUCCESSFUL',
+    failMsg: (r) => 'Unfortunately, '+r+'. Better luck next time!',
+    abandonTitle: 'HIKE ABANDONED',
+    abandonMsg: (done,total) => 'You abandoned the hike. Checked in at '+done+'/'+total+' checkpoints.',
+    rateLabel: 'RATE THE HIKE',
+    rateThanks: 'Thank you for your rating!',
+    farewell: 'Thank you, we look forward to seeing you on the next hike!',
+    backBtn: 'BACK TO HOME',
+    kmLabel: 'Km',
+    cpLabel: 'Points',
+    timeLabel: 'Elapsed time',
+    offline: '⚡ OFFLINE MODE — Map tiles loaded from cache',
+    missing: (n) => 'missed '+n+' checkpoint'+(n>1?'s':''),
+    overtime: 'exceeded the time limit',
+  },
+  de: {
+    emailLabel: 'E-Mail-Adresse',
+    codeLabel: 'Registrierungscode',
+    loginBtn: 'ANMELDEN',
+    loginError: 'Ungültiger Code oder E-Mail!',
+    organizer: 'Veranstalter',
+    gpsSearching: 'GPS-Suche...',
+    gpsActive: 'GPS aktiv',
+    gpsInRange: 'GPS aktiv — AM KONTROLLPUNKT',
+    gpsFar: m => 'GPS aktiv — '+m+' m zum Kontrollpunkt',
+    gpsError: 'GPS-Fehler',
+    gpsNoPermission: 'Berechtigung verweigert',
+    distLabel: m => 'NOCH '+m+' M — NÄHERN',
+    threshold: 'Radius',
+    checkinStart: 'START EINSTEMPELN',
+    checkinBtn: name => name,
+    checkinDone: '✓ EINGESTEMPELT',
+    checkinGpsSearch: 'GPS SUCHE...',
+    checkinGpsError: 'GPS FEHLER',
+    checkinGpsNo: 'GPS NICHT VERFÜGBAR',
+    checkinClosed: (f,t) => 'KONTROLLPUNKT GESCHLOSSEN — '+f+' – '+t,
+    closedLabel: 'Kontrollpunkt ist derzeit geschlossen',
+    nextPoint: 'ZUM NÄCHSTEN KONTROLLPUNKT...',
+    countdown: 'ZEITLIMIT',
+    countdownExpired: 'ABGELAUFEN!',
+    abandonBtn: 'WANDERUNG ABBRECHEN',
+    abandonConfirm: 'Wanderung wirklich abbrechen?',
+    logoutConfirm: 'Wirklich abmelden?',
+    resumeConfirm: (cur,total,name) => 'Wanderung fortsetzen?\n\nGespeicherter Fortschritt: '+cur+' / '+total+' Kontrollpunkte\nNächster: '+name,
+    mapTab: 'Karte',
+    cpTab: 'Kontrollpunkte',
+    logoutTab: 'Abmelden',
+    cpSection: 'Kontrollpunkte',
+    successTitle: 'ERFOLGREICH!',
+    successMsg: 'Herzlichen Glückwunsch, du hast die Wanderung erfolgreich abgeschlossen!',
+    failTitle: 'NICHT ERFOLGREICH',
+    failMsg: (r) => 'Leider '+r+'. Viel Erfolg beim nächsten Mal!',
+    abandonTitle: 'WANDERUNG ABGEBROCHEN',
+    abandonMsg: (done,total) => 'Die Wanderung wurde abgebrochen. Eingestempelt bei '+done+'/'+total+' Kontrollpunkten.',
+    rateLabel: 'WANDERUNG BEWERTEN',
+    rateThanks: 'Vielen Dank für Ihre Bewertung!',
+    farewell: 'Danke, wir freuen uns auf die nächste Wanderung mit Ihnen!',
+    backBtn: 'ZURÜCK ZUR STARTSEITE',
+    kmLabel: 'Km',
+    cpLabel: 'Punkte',
+    timeLabel: 'Benötigte Zeit',
+    offline: '⚡ OFFLINE-MODUS — Kartenkacheln aus dem Cache',
+    missing: (n) => n+' Kontrollpunkt'+(n>1?'e':'')+' ausgelassen',
+    overtime: 'Zeitlimit überschritten',
+  },
+};
+
+let currentLang = 'hu';
+
+function setLang(lang, e){
+  if(e){e.preventDefault();e.stopPropagation();}
+  currentLang = lang;
+  localStorage.setItem('hazajaro_lang', lang);
+  // Update select
+  const sel = document.getElementById('lang-select');
+  if(sel) sel.value = lang;
+  // Update old lang buttons if present
+  ['hu','en','de'].forEach(l=>{
+    const btn=document.getElementById('lang-'+l);
+    if(!btn)return;
+    btn.style.background = l===lang ? 'var(--moss)' : 'transparent';
+    btn.style.borderColor = l===lang ? 'var(--moss2)' : 'rgba(255,255,255,0.15)';
+    btn.style.color = l===lang ? 'var(--snow)' : 'var(--frost)';
+  });
+  applyLang();
+}
+
+function applyLang(){
+  const t = LANGS[currentLang] || LANGS.hu;
+  // Login
+  const lblEmail=document.getElementById('lbl-email'); if(lblEmail)lblEmail.textContent=t.emailLabel;
+  const lblCode=document.getElementById('lbl-code'); if(lblCode)lblCode.textContent=t.codeLabel;
+  const btnLogin=document.getElementById('btn-login'); if(btnLogin)btnLogin.textContent=t.loginBtn;
+  const lblOrg=document.getElementById('lbl-organizer'); if(lblOrg)lblOrg.textContent=t.organizer;
+  // Map nav tabs
+  ['nav-map','nav-map2'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.lastChild.textContent=t.mapTab;
+  });
+  ['nav-cp','nav-cp2'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.lastChild.textContent=t.cpTab;
+  });
+  // CP section title
+  const cpSec=document.getElementById('cp-section-title');
+  if(cpSec)cpSec.textContent=t.cpSection;
+  // Abandon btn
+  const ab=document.getElementById('abandon-btn');
+  if(ab)ab.textContent=t.abandonBtn;
+  // Countdown label
+  const cdl=document.getElementById('countdown-label');
+  if(cdl)cdl.textContent=t.countdown+':';
+  // Farewell
+  const fw=document.getElementById('farewell-txt');
+  if(fw)fw.textContent=t.farewell;
+  // Back btn
+  const bb=document.getElementById('back-btn');
+  if(bb)bb.textContent=t.backBtn;
+  // Stat labels
+  const fkm=document.getElementById('fin-km-lbl'); if(fkm)fkm.textContent=t.kmLabel;
+  const fcp=document.getElementById('fin-cp-lbl'); if(fcp)fcp.textContent=t.cpLabel;
+  const ftm=document.getElementById('fin-time-lbl'); if(ftm)ftm.textContent=t.timeLabel;
+  // Rate label
+  const rl=document.getElementById('rate-label'); if(rl)rl.textContent=t.rateLabel;
+  // Threshold label
+  document.getElementById('thresh-label') && (document.getElementById('thresh-label').parentElement.firstChild.textContent=t.threshold+': ');
+  // Offline banner
+  const ob=document.getElementById('offline-banner'); if(ob)ob.textContent=t.offline;
+}
+
+function T(key, ...args){
+  const t = LANGS[currentLang] || LANGS.hu;
+  const val = t[key];
+  if(typeof val === 'function') return val(...args);
+  return val || LANGS.hu[key] || key;
+}
+
+
 // ===== STATE =====
 let state = {
   user: null,
@@ -2038,229 +2263,6 @@ function showSaveToast(msg){
   t._to=setTimeout(()=>t.style.opacity='0',2000);
 }
 
-// ===== TRANSLATIONS =====
-const LANGS = {
-  hu: {
-    emailLabel: 'E-mail cím',
-    codeLabel: 'Regisztrációs kód',
-    loginBtn: 'BELÉPÉS',
-    loginError: 'Érvénytelen kód vagy e-mail!',
-    organizer: 'Szervező',
-    gpsSearching: 'GPS helyzet keresése...',
-    gpsActive: 'GPS aktív',
-    gpsInRange: 'GPS aktív — A PONTON BELÜL',
-    gpsFar: m => 'GPS aktív — '+m+' m a ponttól',
-    gpsError: 'GPS hiba',
-    gpsNoPermission: 'Engedély megtagadva',
-    distLabel: m => 'MÉG '+m+' M — KÖZELEDJ',
-    threshold: 'Határ',
-    checkinStart: 'RAJT BEJELENTKEZÉS',
-    checkinBtn: name => name,
-    checkinDone: '✓ BEJELENTKEZVE',
-    checkinGpsSearch: 'GPS KERESÉS...',
-    checkinGpsError: 'GPS HIBA',
-    checkinGpsNo: 'GPS NEM ELÉRHETŐ',
-    checkinClosed: (f,t) => 'PONT ZÁRVA — '+f+' – '+t,
-    closedLabel: 'A pont jelenleg zárva',
-    nextPoint: 'KÖVETKEZŐ PONT FELÉ...',
-    countdown: 'SZINTIDŐ',
-    countdownExpired: 'LEJÁRT!',
-    abandonBtn: 'TÚRA FELADÁSA',
-    abandonConfirm: T('abandonConfirm'),
-    logoutConfirm: T('logoutConfirm'),
-    resumeConfirm: (cur,total,name) => 'Folytatod a megkezdett túrát?\n\nMentett haladás: '+cur+' / '+total+' pont\nKövetkező pont: '+name,
-    mapTab: 'Térkép',
-    cpTab: 'Pontok',
-    logoutTab: 'Kilép',
-    cpSection: 'Ellenőrzőpontok',
-    successTitle: 'SIKERES TELJESÍTÉS!',
-    successMsg: 'Gratulálunk, sikeresen befejezted a túrát!',
-    failTitle: 'SIKERTELEN TELJESÍTÉS',
-    failMsg: (r) => 'Sajnáljuk, '+r+'. Legközelebb sikerülni fog!',
-    abandonTitle: 'TÚRA FELADVA',
-    abandonMsg: (done,total) => 'A túrát feladtad. '+done+'/'+total+' ellenőrzőponton voltál bejelentkezve.',
-    rateLabel: 'ÉRTÉKELD A TÚRÁT',
-    rateThanks: 'Köszönjük az értékelést!',
-    farewell: 'Köszönjük, várunk szeretettel a következő túránkon is!',
-    backBtn: 'VISSZA A FŐOLDALRA',
-    kmLabel: 'Km',
-    cpLabel: 'Pont',
-    timeLabel: 'Megtett idő',
-    offline: '⚡ OFFLINE MÓD — Térkép csempék cache-ből töltődnek',
-    missing: (n) => 'kihagytál '+n+' ellenőrzőpontot',
-    overtime: 'kicsúsztál a szintidőből',
-  },
-  en: {
-    emailLabel: 'E-mail address',
-    codeLabel: 'Registration code',
-    loginBtn: 'LOGIN',
-    loginError: 'Invalid code or e-mail!',
-    organizer: 'Organizer',
-    gpsSearching: 'Searching for GPS...',
-    gpsActive: 'GPS active',
-    gpsInRange: 'GPS active — AT THE CHECKPOINT',
-    gpsFar: m => 'GPS active — '+m+' m from checkpoint',
-    gpsError: 'GPS error',
-    gpsNoPermission: 'Permission denied',
-    distLabel: m => 'STILL '+m+' M AWAY',
-    threshold: 'Radius',
-    checkinStart: 'START CHECK-IN',
-    checkinBtn: name => name,
-    checkinDone: '✓ CHECKED IN',
-    checkinGpsSearch: 'SEARCHING GPS...',
-    checkinGpsError: 'GPS ERROR',
-    checkinGpsNo: 'GPS UNAVAILABLE',
-    checkinClosed: (f,t) => 'CHECKPOINT CLOSED — '+f+' – '+t,
-    closedLabel: 'Checkpoint is currently closed',
-    nextPoint: 'HEADING TO NEXT CHECKPOINT...',
-    countdown: 'TIME LIMIT',
-    countdownExpired: 'EXPIRED!',
-    abandonBtn: 'ABANDON HIKE',
-    abandonConfirm: 'Are you sure you want to abandon the hike?',
-    logoutConfirm: 'Are you sure you want to log out?',
-    resumeConfirm: (cur,total,name) => 'Continue your hike?\n\nSaved progress: '+cur+' / '+total+' checkpoints\nNext: '+name,
-    mapTab: 'Map',
-    cpTab: 'Checkpoints',
-    logoutTab: 'Logout',
-    cpSection: 'Checkpoints',
-    successTitle: 'COMPLETED!',
-    successMsg: 'Congratulations, you successfully completed the hike!',
-    failTitle: 'UNSUCCESSFUL',
-    failMsg: (r) => 'Unfortunately, '+r+'. Better luck next time!',
-    abandonTitle: 'HIKE ABANDONED',
-    abandonMsg: (done,total) => 'You abandoned the hike. Checked in at '+done+'/'+total+' checkpoints.',
-    rateLabel: 'RATE THE HIKE',
-    rateThanks: 'Thank you for your rating!',
-    farewell: 'Thank you, we look forward to seeing you on the next hike!',
-    backBtn: 'BACK TO HOME',
-    kmLabel: 'Km',
-    cpLabel: 'Points',
-    timeLabel: 'Elapsed time',
-    offline: '⚡ OFFLINE MODE — Map tiles loaded from cache',
-    missing: (n) => 'missed '+n+' checkpoint'+(n>1?'s':''),
-    overtime: 'exceeded the time limit',
-  },
-  de: {
-    emailLabel: 'E-Mail-Adresse',
-    codeLabel: 'Registrierungscode',
-    loginBtn: 'ANMELDEN',
-    loginError: 'Ungültiger Code oder E-Mail!',
-    organizer: 'Veranstalter',
-    gpsSearching: 'GPS-Suche...',
-    gpsActive: 'GPS aktiv',
-    gpsInRange: 'GPS aktiv — AM KONTROLLPUNKT',
-    gpsFar: m => 'GPS aktiv — '+m+' m zum Kontrollpunkt',
-    gpsError: 'GPS-Fehler',
-    gpsNoPermission: 'Berechtigung verweigert',
-    distLabel: m => 'NOCH '+m+' M — NÄHERN',
-    threshold: 'Radius',
-    checkinStart: 'START EINSTEMPELN',
-    checkinBtn: name => name,
-    checkinDone: '✓ EINGESTEMPELT',
-    checkinGpsSearch: 'GPS SUCHE...',
-    checkinGpsError: 'GPS FEHLER',
-    checkinGpsNo: 'GPS NICHT VERFÜGBAR',
-    checkinClosed: (f,t) => 'KONTROLLPUNKT GESCHLOSSEN — '+f+' – '+t,
-    closedLabel: 'Kontrollpunkt ist derzeit geschlossen',
-    nextPoint: 'ZUM NÄCHSTEN KONTROLLPUNKT...',
-    countdown: 'ZEITLIMIT',
-    countdownExpired: 'ABGELAUFEN!',
-    abandonBtn: 'WANDERUNG ABBRECHEN',
-    abandonConfirm: 'Wanderung wirklich abbrechen?',
-    logoutConfirm: 'Wirklich abmelden?',
-    resumeConfirm: (cur,total,name) => 'Wanderung fortsetzen?\n\nGespeicherter Fortschritt: '+cur+' / '+total+' Kontrollpunkte\nNächster: '+name,
-    mapTab: 'Karte',
-    cpTab: 'Kontrollpunkte',
-    logoutTab: 'Abmelden',
-    cpSection: 'Kontrollpunkte',
-    successTitle: 'ERFOLGREICH!',
-    successMsg: 'Herzlichen Glückwunsch, du hast die Wanderung erfolgreich abgeschlossen!',
-    failTitle: 'NICHT ERFOLGREICH',
-    failMsg: (r) => 'Leider '+r+'. Viel Erfolg beim nächsten Mal!',
-    abandonTitle: 'WANDERUNG ABGEBROCHEN',
-    abandonMsg: (done,total) => 'Die Wanderung wurde abgebrochen. Eingestempelt bei '+done+'/'+total+' Kontrollpunkten.',
-    rateLabel: 'WANDERUNG BEWERTEN',
-    rateThanks: 'Vielen Dank für Ihre Bewertung!',
-    farewell: 'Danke, wir freuen uns auf die nächste Wanderung mit Ihnen!',
-    backBtn: 'ZURÜCK ZUR STARTSEITE',
-    kmLabel: 'Km',
-    cpLabel: 'Punkte',
-    timeLabel: 'Benötigte Zeit',
-    offline: '⚡ OFFLINE-MODUS — Kartenkacheln aus dem Cache',
-    missing: (n) => n+' Kontrollpunkt'+(n>1?'e':'')+' ausgelassen',
-    overtime: 'Zeitlimit überschritten',
-  },
-};
-
-let currentLang = 'hu';
-
-function setLang(lang, e){
-  if(e){e.preventDefault();e.stopPropagation();}
-  currentLang = lang;
-  localStorage.setItem('hazajaro_lang', lang);
-  // Update select
-  const sel = document.getElementById('lang-select');
-  if(sel) sel.value = lang;
-  // Update old lang buttons if present
-  ['hu','en','de'].forEach(l=>{
-    const btn=document.getElementById('lang-'+l);
-    if(!btn)return;
-    btn.style.background = l===lang ? 'var(--moss)' : 'transparent';
-    btn.style.borderColor = l===lang ? 'var(--moss2)' : 'rgba(255,255,255,0.15)';
-    btn.style.color = l===lang ? 'var(--snow)' : 'var(--frost)';
-  });
-  applyLang();
-}
-
-function applyLang(){
-  const t = LANGS[currentLang] || LANGS.hu;
-  // Login
-  const lblEmail=document.getElementById('lbl-email'); if(lblEmail)lblEmail.textContent=t.emailLabel;
-  const lblCode=document.getElementById('lbl-code'); if(lblCode)lblCode.textContent=t.codeLabel;
-  const btnLogin=document.getElementById('btn-login'); if(btnLogin)btnLogin.textContent=t.loginBtn;
-  const lblOrg=document.getElementById('lbl-organizer'); if(lblOrg)lblOrg.textContent=t.organizer;
-  // Map nav tabs
-  ['nav-map','nav-map2'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.lastChild.textContent=t.mapTab;
-  });
-  ['nav-cp','nav-cp2'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.lastChild.textContent=t.cpTab;
-  });
-  // CP section title
-  const cpSec=document.getElementById('cp-section-title');
-  if(cpSec)cpSec.textContent=t.cpSection;
-  // Abandon btn
-  const ab=document.getElementById('abandon-btn');
-  if(ab)ab.textContent=t.abandonBtn;
-  // Countdown label
-  const cdl=document.getElementById('countdown-label');
-  if(cdl)cdl.textContent=t.countdown+':';
-  // Farewell
-  const fw=document.getElementById('farewell-txt');
-  if(fw)fw.textContent=t.farewell;
-  // Back btn
-  const bb=document.getElementById('back-btn');
-  if(bb)bb.textContent=t.backBtn;
-  // Stat labels
-  const fkm=document.getElementById('fin-km-lbl'); if(fkm)fkm.textContent=t.kmLabel;
-  const fcp=document.getElementById('fin-cp-lbl'); if(fcp)fcp.textContent=t.cpLabel;
-  const ftm=document.getElementById('fin-time-lbl'); if(ftm)ftm.textContent=t.timeLabel;
-  // Rate label
-  const rl=document.getElementById('rate-label'); if(rl)rl.textContent=t.rateLabel;
-  // Threshold label
-  document.getElementById('thresh-label') && (document.getElementById('thresh-label').parentElement.firstChild.textContent=t.threshold+': ');
-  // Offline banner
-  const ob=document.getElementById('offline-banner'); if(ob)ob.textContent=t.offline;
-}
-
-function T(key, ...args){
-  const t = LANGS[currentLang] || LANGS.hu;
-  const val = t[key];
-  if(typeof val === 'function') return val(...args);
-  return val || LANGS.hu[key] || key;
-}
 window.addEventListener('DOMContentLoaded', () => {
   const localLoaded = lsLoad();
 

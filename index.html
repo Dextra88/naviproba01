@@ -840,12 +840,16 @@ function formatHHMM(ms){
 
 function applyBranding(){
   const logo=state.appName||'HAZAJÁRÓ\nTÚRÁK';
-  // Normalize: ha nincs \n, az első szóköznél törjük
-  const normalized = logo.includes('\n') ? logo : logo.replace(' ','\\n').replace('\\n','\n');
-  const parts = normalized.split('\n');
   const logoEl=document.getElementById('login-logo');
   if(logoEl){
-    logoEl.innerHTML = parts.map(p=>p.trim()).filter(p=>p).join('<br>');
+    // \n-t <br>-re, ha nincs \n akkor első szóköznél törjük
+    if(logo.includes('\n')){
+      logoEl.innerHTML=logo.split('\n').join('<br>');
+    } else {
+      const idx=logo.indexOf(' ');
+      if(idx>0) logoEl.innerHTML=logo.slice(0,idx)+'<br>'+logo.slice(idx+1);
+      else logoEl.innerHTML=logo;
+    }
   }
   const sub=state.appSub||'TÚRA ALKALMAZÁS';
   const subEl=document.getElementById('login-sub');
@@ -1827,7 +1831,7 @@ function lsLoad(){
     if(data.gpxElevation!=null)state.gpxElevation=data.gpxElevation;
     if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
     if(data.participants)state.participants=data.participants;
-    if(data.appName)state.appName=data.appName.includes('\n')?data.appName:(data.appName.includes(' ')?data.appName.replace(' ','
+    if(data.appName)state.appName=data.appName;
 '):data.appName);
     if(data.appSub)state.appSub=data.appSub;
     if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
@@ -1901,7 +1905,7 @@ async function fbLoadConfig(){
     if(data.checkpoints&&data.checkpoints.length>0)state.checkpoints=data.checkpoints;
     if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
     if(data.participants)state.participants=data.participants;
-    if(data.appName)state.appName=data.appName.includes('\n')?data.appName:(data.appName.includes(' ')?data.appName.replace(' ','
+    if(data.appName)state.appName=data.appName;
 '):data.appName);
     if(data.appSub)state.appSub=data.appSub;
     if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
@@ -2237,7 +2241,7 @@ function importConfig(input){
       if(data.gpxElevation!=null)state.gpxElevation=data.gpxElevation;
       if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
       if(data.participants)state.participants=data.participants;
-      if(data.appName)state.appName=data.appName.includes('\n')?data.appName:(data.appName.includes(' ')?data.appName.replace(' ','
+      if(data.appName)state.appName=data.appName;
 '):data.appName);
       if(data.appSub)state.appSub=data.appSub;
       if(data.eventLabel!=null)state.eventLabel=data.eventLabel;
@@ -2320,7 +2324,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(data.gpxTotalKm!=null)state.gpxTotalKm=data.gpxTotalKm;
         if(data.checkinRadius)state.checkinRadius=data.checkinRadius;
         if(data.participants)state.participants=data.participants;
-        if(data.appName)state.appName=data.appName.includes('\n')?data.appName:(data.appName.includes(' ')?data.appName.replace(' ','
+        if(data.appName)state.appName=data.appName;
 '):data.appName);
         if(data.appSub)state.appSub=data.appSub;
         if(data.eventLabel!=null)state.eventLabel=data.eventLabel;

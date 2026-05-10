@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title id="page-title">Hazajáró Túrák</title>
 <link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
@@ -68,7 +68,7 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
 #s-login{background:var(--bark);justify-content:center;align-items:center;overflow-y:auto;}
 .login-wrap{width:100%;max-width:380px;padding:24px;}
 .login-header{text-align:center;margin-bottom:28px;}
-.login-logo{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:4px;line-height:1.1;color:var(--snow);text-align:center;}
+.login-logo{font-family:'Bebas Neue',sans-serif;font-size:46px;letter-spacing:3px;line-height:1.15;color:var(--snow);text-align:center;word-break:keep-all;}
 .login-sub{font-size:12px;letter-spacing:5px;color:var(--frost);margin-top:4px;}
 .login-event{display:none;margin-top:12px;border:1px solid var(--moss2);padding:5px 14px;font-size:12px;letter-spacing:2px;color:var(--mist);background:rgba(61,74,46,0.2);}
 .field-label{display:block;font-size:11px;letter-spacing:3px;color:var(--frost);text-transform:uppercase;margin-bottom:5px;}
@@ -88,7 +88,7 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
 .topbar-badge.admin{background:rgba(122,30,30,.3);border-color:var(--blood);color:#e07070;}
 
 /* BOTTOM NAV */
-.bottom-nav{background:var(--bark);border-top:2px solid var(--moss);display:flex;flex-shrink:0;z-index:100;}
+.bottom-nav{background:var(--bark);border-top:2px solid var(--moss);display:flex;flex-shrink:0;z-index:100;padding-bottom:env(safe-area-inset-bottom, 0px);}
 .nav-btn{flex:1;padding:9px 6px 7px;text-align:center;cursor:pointer;border:none;background:transparent;color:var(--frost);font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:color .2s;border-top:2px solid transparent;}
 .nav-btn.active{color:var(--snow);border-top-color:var(--frost);}
 .nav-btn svg{display:block;margin:0 auto 2px;}
@@ -851,23 +851,9 @@ function formatHHMM(ms){
 }
 
 function applyBranding(){
-  const logo=(state.appName||'HAZAJÁRÓ\nTÚRÁK').trim();
   const logoEl=document.getElementById('login-logo');
-  let topbarName='HAZAJÁRÓ';
-  if(logoEl){
-    // Mindig két sor: \n-nél törjük, ha nincs akkor első szóköznél
-    let line1, line2;
-    if(logo.includes('\n')){
-      const p=logo.split('\n');
-      line1=p[0].trim(); line2=p.slice(1).join(' ').trim();
-    } else {
-      const idx=logo.indexOf(' ');
-      if(idx>0){ line1=logo.slice(0,idx); line2=logo.slice(idx+1); }
-      else { line1=logo; line2=''; }
-    }
-    logoEl.innerHTML = line2 ? line1+'<br>'+line2 : line1;
-    topbarName = line1;
-  }
+  if(logoEl) logoEl.innerHTML='HAZAJÁRÓ<br>TÚRÁK';
+  const topbarName='HAZAJÁRÓ';
   const sub=state.appSub||'TÚRA ALKALMAZÁS';
   const subEl=document.getElementById('login-sub');
   if(subEl)subEl.textContent=sub;

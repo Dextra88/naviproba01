@@ -841,20 +841,26 @@ function formatHHMM(ms){
 function applyBranding(){
   const logo=state.appName||'HAZAJÁRÓ\nTÚRÁK';
   const logoEl=document.getElementById('login-logo');
+  let topbarName='HAZAJÁRÓ';
   if(logoEl){
-    // \n-t <br>-re, ha nincs \n akkor első szóköznél törjük
     if(logo.includes('\n')){
-      logoEl.innerHTML=logo.split('\n').join('<br>');
+      const parts=logo.split('\n');
+      logoEl.innerHTML=parts.join('<br>');
+      topbarName=parts[0]||'HAZAJÁRÓ';
     } else {
       const idx=logo.indexOf(' ');
-      if(idx>0) logoEl.innerHTML=logo.slice(0,idx)+'<br>'+logo.slice(idx+1);
-      else logoEl.innerHTML=logo;
+      if(idx>0){
+        logoEl.innerHTML=logo.slice(0,idx)+'<br>'+logo.slice(idx+1);
+        topbarName=logo.slice(0,idx);
+      } else {
+        logoEl.innerHTML=logo;
+        topbarName=logo;
+      }
     }
   }
   const sub=state.appSub||'TÚRA ALKALMAZÁS';
   const subEl=document.getElementById('login-sub');
   if(subEl)subEl.textContent=sub;
-  const topbarName=parts[0]||'HAZAJÁRÓ';
   ['map-topbar-logo','cp-topbar-logo'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.textContent=topbarName;

@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Hazajáró Túrák">
 <meta name="theme-color" content="#1e1a14">
-<link rel="apple-touch-icon" href="icon.png">
-<link rel="apple-touch-startup-image" href="icon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-startup-image" href="apple-touch-icon.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
@@ -489,11 +489,25 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
     </div>
 
     <div class="settings-block">
-      <div class="settings-block-title">Követés — Mai eredmények</div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <button onclick="loadAdminResults()" style="flex:1;background:var(--moss);border:1px solid var(--moss2);color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:9px;cursor:pointer;">FRISSÍTÉS</button>
+      <div class="settings-block-title">Túra kezelés</div>
+
+      <!-- Túra státusz -->
+      <div id="tour-status-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);">
+        <div id="tour-status-dot" style="width:10px;height:10px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite;flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div style="font-size:13px;color:var(--snow);" id="tour-status-txt">Túra folyamatban</div>
+          <div style="font-size:11px;color:var(--frost);margin-top:2px;" id="tour-status-sub">Első bejelentkezéstől számítva</div>
+        </div>
       </div>
-      <div id="admin-results-list" style="max-height:220px;overflow-y:auto;">
+
+      <!-- Frissítés és lezárás -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button onclick="loadAdminResults()" style="flex:1;background:var(--moss);border:1px solid var(--moss2);color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:9px;cursor:pointer;">FRISSÍTÉS</button>
+        <button onclick="closeTourConfirm()" style="flex:1;background:var(--blood);border:1px solid var(--blood2);color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:9px;cursor:pointer;">TÚRA LEZÁRÁSA</button>
+      </div>
+
+      <!-- Eredmények -->
+      <div id="admin-results-list" style="max-height:240px;overflow-y:auto;">
         <div style="font-size:12px;color:var(--frost);text-align:center;padding:10px;">Kattints a Frissítés gombra</div>
       </div>
     </div>
@@ -1719,32 +1733,214 @@ async function fbLoadParticipantDetail(email){
 async function fbLoadTodayResults(){
   if(!window.fbReady)return[];
   try{
-    const today=new Date().toISOString().slice(0,10);
     const q=window.fbQuery(
       window.fbCollection(window.fbDb,'results'),
       window.fbOrderBy('timestamp','desc'),
-      window.fbLimit(200)
+      window.fbLimit(500)
     );
     const snap=await new Promise((res,rej)=>{
       const unsub=window.fbOnSnapshot(q,s=>{unsub();res(s);},rej);
     });
-    return snap.docs.map(d=>d.data()).filter(d=>d.date===today);
+    // Merge ratings
+    const ratingsSnap=await new Promise((res,rej)=>{const u=window.fbOnSnapshot(window.fbCollection(window.fbDb,'ratings'),s=>{u();res(s);},rej);});
+    const ratingMap={};
+    ratingsSnap.docs.forEach(d=>{const r=d.data();ratingMap[r.email]=r.stars;});
+    return snap.docs.map(d=>{const r=d.data();return{...r,stars:ratingMap[r.email]||null};});
   }catch(e){return[];}
 }
 async function loadAdminResults(){
   const list=document.getElementById('admin-results-list');
   list.innerHTML='<div style="font-size:12px;color:var(--frost);text-align:center;padding:10px;">Betöltés...</div>';
   const results=await fbLoadTodayResults();
-  if(results.length===0){list.innerHTML='<div style="font-size:12px;color:var(--frost);text-align:center;padding:10px;">Még nincs mai eredmény</div>';return;}
+  updateTourStatusBar(results);
+  if(results.length===0){list.innerHTML='<div style="font-size:12px;color:var(--frost);text-align:center;padding:10px;">Még nincs eredmény</div>';return;}
   list.innerHTML=results.map(r=>`
     <div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-      <div style="width:28px;height:28px;border-radius:50%;background:${r.success?'var(--ok)':'var(--blood)'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${r.success?'✓':'✗'}</div>
+      <div style="width:26px;height:26px;border-radius:50%;background:${r.success?'var(--ok)':'var(--blood)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">${r.success?'✓':'✗'}</div>
       <div style="flex:1;">
-        <div style="font-size:14px;color:var(--snow);">${r.name}</div>
-        <div style="font-size:11px;color:var(--frost);">${r.doneCps}/${r.totalCps} pont · ${r.elapsedFormatted||'—'}</div>
+        <div style="font-size:13px;color:var(--snow);">${r.name}</div>
+        <div style="font-size:11px;color:var(--frost);">${r.doneCps}/${r.totalCps} pont · ${r.elapsedFormatted||'—'}${r.stars?(' · '+'★'.repeat(r.stars)):''}</div>
       </div>
-      <div style="font-size:11px;color:${r.success?'#8fc870':'#e07070'};letter-spacing:1px;">${r.success?'SIKERES':'SIKERTELEN'}</div>
+      <div style="font-size:10px;color:${r.success?'#8fc870':'#e07070'};letter-spacing:1px;">${r.success?'SIKERES':'SIKERTELEN'}</div>
     </div>`).join('');
+}
+
+function updateTourStatusBar(results){
+  const dot=document.getElementById('tour-status-dot');
+  const txt=document.getElementById('tour-status-txt');
+  const sub=document.getElementById('tour-status-sub');
+  if(!dot)return;
+  const total=results.length;
+  const done=results.filter(r=>r.success).length;
+  txt.textContent='Túra folyamatban — '+total+' befejezett';
+  sub.textContent=done+' sikeres, '+(total-done)+' sikertelen';
+}
+
+function closeTourConfirm(){
+  if(!confirm('Biztosan lezárod a túrát?\n\nEzután letöltődik az Excel összesítő.\nA bejelentkezések adatai megmaradnak Firebase-ben.'))return;
+  exportTourExcel();
+}
+
+async function exportTourExcel(){
+  if(typeof XLSX==='undefined'){
+    const script=document.createElement('script');
+    script.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload=()=>doExportTourExcel();
+    document.head.appendChild(script);
+  } else {
+    doExportTourExcel();
+  }
+}
+
+async function doExportTourExcel(){
+  showSaveToast('Excel generálás...');
+
+  // Load all data
+  const [results, allCheckins, allRatings] = await Promise.all([
+    fbLoadTodayResults(),
+    fbLoadAllCheckins(),
+    fbLoadAllRatings(),
+  ]);
+
+  const tourName = state.appName?.replace('\n',' ') || 'Hazajáró Túrák';
+  const today = new Date().toLocaleDateString('hu-HU');
+  const cps = state.checkpoints;
+
+  // Find tour start and end times
+  let tourStart = null, tourEnd = null;
+  allCheckins.forEach(c=>{
+    const t = c.timestamp?.toDate ? c.timestamp.toDate() : null;
+    if(!t)return;
+    if(!tourStart||t<tourStart)tourStart=t;
+    if(!tourEnd||t>tourEnd)tourEnd=t;
+  });
+  results.forEach(r=>{
+    const t = r.timestamp?.toDate ? r.timestamp.toDate() : null;
+    if(!t)return;
+    if(!tourStart||t<tourStart)tourStart=t;
+    if(!tourEnd||t>tourEnd)tourEnd=t;
+  });
+
+  const fmtTime = d => d ? d.toLocaleString('hu-HU',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+
+  // Build workbook
+  const wb = XLSX.utils.book_new();
+
+  // === ÖSSZESÍTŐ SHEET ===
+  const headerRow1 = [tourName];
+  const headerRow2 = ['Kezdés: '+fmtTime(tourStart), '', 'Zárás: '+fmtTime(tourEnd||new Date())];
+  const headerRow3 = ['Dátum: '+today];
+
+  // Column headers: Név, Email, Kód, EP1...EPN, Teljesítés, Idő, Értékelés
+  const cpHeaders = cps.map(cp=>cp.name);
+  const colHeaders = ['Név', 'Email', 'Kód', ...cpHeaders, 'Teljesítés', 'Megtett idő', 'Értékelés (★)'];
+
+  const rows = [headerRow1, headerRow2, headerRow3, [], colHeaders];
+
+  // Build checkin lookup: email -> {cpIndex: timestamp}
+  const checkinMap = {};
+  allCheckins.forEach(c=>{
+    if(!checkinMap[c.email]) checkinMap[c.email]={};
+    const t = c.timestamp?.toDate ? c.timestamp.toDate() : null;
+    checkinMap[c.email][c.cpIndex] = t ? t.toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'}) : '✓';
+  });
+
+  // Rating lookup
+  const ratingMap = {};
+  allRatings.forEach(r=>{ ratingMap[r.email]=r.stars; });
+
+  // Result lookup
+  const resultMap = {};
+  results.forEach(r=>{ resultMap[r.email]=r; });
+
+  // One row per participant
+  state.participants.forEach(p=>{
+    const r = resultMap[p.email];
+    const checkins = checkinMap[p.email]||{};
+    const cpCells = cps.map((_,i)=>checkins[i]||'');
+    const success = r ? (r.success ? 'SIKERES' : 'SIKERTELEN') : 'NEM INDULT';
+    const time = r ? (r.elapsedFormatted||'—') : '—';
+    const stars = ratingMap[p.email] ? '★'.repeat(ratingMap[p.email]) : '';
+    rows.push([p.name, p.email, p.code, ...cpCells, success, time, stars]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Styling: merge title, set column widths
+  ws['!merges'] = [
+    {s:{r:0,c:0}, e:{r:0,c:colHeaders.length-1}}, // title merge
+  ];
+  ws['!cols'] = [
+    {wch:20}, // Név
+    {wch:28}, // Email
+    {wch:6},  // Kód
+    ...cps.map(()=>({wch:12})), // EP-k
+    {wch:14}, // Teljesítés
+    {wch:12}, // Idő
+    {wch:12}, // Értékelés
+  ];
+
+  // Color cells: success=green, fail=red
+  const dataStartRow = 5; // 0-indexed row where data starts
+  state.participants.forEach((p,pi)=>{
+    const r = resultMap[p.email];
+    const rowIdx = dataStartRow + pi;
+    const successColIdx = 3 + cps.length;
+    const cellRef = XLSX.utils.encode_cell({r:rowIdx, c:successColIdx});
+    if(!ws[cellRef])return;
+    ws[cellRef].s = {
+      fill:{fgColor:{rgb: r?.success ? '4CAF50' : (r ? 'F44336' : '888888')}},
+      font:{color:{rgb:'FFFFFF'}, bold:true},
+      alignment:{horizontal:'center'}
+    };
+  });
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Túra összesítő');
+
+  // === BEJELENTKEZÉSEK SHEET ===
+  const checkinSheet = [['Név','Email','Kód','Ellenőrzőpont','Időpont']];
+  allCheckins.sort((a,b)=>{
+    const ta=a.timestamp?.toDate?a.timestamp.toDate():new Date(0);
+    const tb=b.timestamp?.toDate?b.timestamp.toDate():new Date(0);
+    return ta-tb;
+  }).forEach(c=>{
+    const t=c.timestamp?.toDate?c.timestamp.toDate().toLocaleString('hu-HU'):'—';
+    checkinSheet.push([c.name||'',c.email||'',c.code||'',c.cpName||'',t]);
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet(checkinSheet);
+  ws2['!cols']=[{wch:20},{wch:28},{wch:6},{wch:20},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Bejelentkezések');
+
+  // Download
+  const filename = tourName.replace(/\s+/g,'_')+'_'+today.replace(/\./g,'')+'.xlsx';
+  XLSX.writeFile(wb, filename);
+  showSaveToast('✓ Excel letöltve!');
+
+  // Mark tour as closed in Firebase
+  if(window.fbReady){
+    window.fbSetDoc(window.fbDoc(window.fbDb,'config','tourStatus'),{
+      closed: true,
+      closedAt: window.fbServerTimestamp(),
+      tourName: tourName,
+    }).catch(()=>{});
+  }
+}
+
+async function fbLoadAllCheckins(){
+  if(!window.fbReady)return[];
+  try{
+    const q=window.fbQuery(window.fbCollection(window.fbDb,'checkins'),window.fbOrderBy('timestamp','asc'));
+    const snap=await new Promise((res,rej)=>{const u=window.fbOnSnapshot(q,s=>{u();res(s);},rej);});
+    return snap.docs.map(d=>d.data());
+  }catch(e){return[];}
+}
+
+async function fbLoadAllRatings(){
+  if(!window.fbReady)return[];
+  try{
+    const snap=await new Promise((res,rej)=>{const u=window.fbOnSnapshot(window.fbCollection(window.fbDb,'ratings'),s=>{u();res(s);},rej);});
+    return snap.docs.map(d=>d.data());
+  }catch(e){return[];}
 }
 
 async function searchParticipant(){

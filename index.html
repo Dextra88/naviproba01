@@ -216,10 +216,12 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
       <div class="login-logo" id="login-logo">HAZAJÁRÓ<br>TÚRÁK</div>
       <div class="login-sub" id="login-sub">TÚRA ALKALMAZÁS</div>
       <div class="login-event" id="event-display"></div>
-      <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;" id="lang-row">
-        <div id="lang-hu" data-lang="hu" style="background:var(--moss);border:1px solid var(--moss2);color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:12px 20px;min-width:60px;text-align:center;user-select:none;-webkit-user-select:none;">HU</div>
-        <div id="lang-en" data-lang="en" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--frost);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:12px 20px;min-width:60px;text-align:center;user-select:none;-webkit-user-select:none;">EN</div>
-        <div id="lang-de" data-lang="de" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--frost);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:12px 20px;min-width:60px;text-align:center;user-select:none;-webkit-user-select:none;">DE</div>
+      <div style="display:flex;justify-content:center;margin-top:14px;">
+        <select id="lang-select" onchange="setLang(this.value)" style="background:var(--moss);border:1px solid var(--moss2);color:var(--snow);font-family:'Barlow Condensed',sans-serif;font-size:16px;padding:8px 16px;outline:none;letter-spacing:1px;cursor:pointer;">
+          <option value="hu">🇭🇺 Magyar</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="de">🇩🇪 Deutsch</option>
+        </select>
       </div>
     </div>
     <div class="field-group">
@@ -2196,7 +2198,10 @@ function setLang(lang, e){
   if(e){e.preventDefault();e.stopPropagation();}
   currentLang = lang;
   localStorage.setItem('hazajaro_lang', lang);
-  // Update lang buttons
+  // Update select
+  const sel = document.getElementById('lang-select');
+  if(sel) sel.value = lang;
+  // Update old lang buttons if present
   ['hu','en','de'].forEach(l=>{
     const btn=document.getElementById('lang-'+l);
     if(!btn)return;
@@ -2262,19 +2267,6 @@ window.addEventListener('DOMContentLoaded', () => {
   // Load saved language
   const savedLang = localStorage.getItem('hazajaro_lang') || 'hu';
   setLang(savedLang);
-
-  // iOS-kompatibilis nyelvválasztó — event delegation touchstart-tal
-  const langRow = document.getElementById('lang-row');
-  if(langRow){
-    langRow.addEventListener('touchstart', e=>{
-      const target = e.target.closest('[data-lang]');
-      if(target){ e.preventDefault(); setLang(target.dataset.lang); }
-    }, {passive:false});
-    langRow.addEventListener('click', e=>{
-      const target = e.target.closest('[data-lang]');
-      if(target) setLang(target.dataset.lang);
-    });
-  }
 
   // Language buttons — touchstart for iOS
   ['hu','en','de'].forEach(lang => {

@@ -216,10 +216,10 @@ body{font-family:'Barlow Condensed',sans-serif;background:var(--bark);color:var(
       <div class="login-logo" id="login-logo">HAZAJÁRÓ<br>TÚRÁK</div>
       <div class="login-sub" id="login-sub">TÚRA ALKALMAZÁS</div>
       <div class="login-event" id="event-display"></div>
-      <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;">
-        <div id="lang-hu" ontouchend="setLang('hu')" onclick="setLang('hu')" style="background:var(--moss);border:1px solid var(--moss2);color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:10px 20px;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:rgba(255,255,255,0.2);">HU</div>
-        <div id="lang-en" ontouchend="setLang('en')" onclick="setLang('en')" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--frost);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:10px 20px;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:rgba(255,255,255,0.2);">EN</div>
-        <div id="lang-de" ontouchend="setLang('de')" onclick="setLang('de')" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--frost);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:10px 20px;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:rgba(255,255,255,0.2);">DE</div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;" id="lang-row">
+        <div id="lang-hu" data-lang="hu" style="background:var(--moss);border:1px solid var(--moss2);color:var(--snow);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:12px 20px;min-width:60px;text-align:center;user-select:none;-webkit-user-select:none;">HU</div>
+        <div id="lang-en" data-lang="en" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--frost);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:12px 20px;min-width:60px;text-align:center;user-select:none;-webkit-user-select:none;">EN</div>
+        <div id="lang-de" data-lang="de" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--frost);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:12px 20px;min-width:60px;text-align:center;user-select:none;-webkit-user-select:none;">DE</div>
       </div>
     </div>
     <div class="field-group">
@@ -2262,6 +2262,27 @@ window.addEventListener('DOMContentLoaded', () => {
   // Load saved language
   const savedLang = localStorage.getItem('hazajaro_lang') || 'hu';
   setLang(savedLang);
+
+  // iOS-kompatibilis nyelvválasztó — event delegation touchstart-tal
+  const langRow = document.getElementById('lang-row');
+  if(langRow){
+    langRow.addEventListener('touchstart', e=>{
+      const target = e.target.closest('[data-lang]');
+      if(target){ e.preventDefault(); setLang(target.dataset.lang); }
+    }, {passive:false});
+    langRow.addEventListener('click', e=>{
+      const target = e.target.closest('[data-lang]');
+      if(target) setLang(target.dataset.lang);
+    });
+  }
+
+  // Language buttons — touchstart for iOS
+  ['hu','en','de'].forEach(lang => {
+    const btn = document.getElementById('lang-'+lang);
+    if(!btn) return;
+    btn.addEventListener('touchstart', e => { e.preventDefault(); setLang(lang); }, {passive:false});
+    btn.addEventListener('click', e => { e.preventDefault(); setLang(lang); });
+  });
 
   // Session visszaállítása (képernyő zárásnál nem lép ki)
   const sessionRestored = restoreSession();
